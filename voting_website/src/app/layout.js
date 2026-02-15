@@ -22,25 +22,33 @@ export default function RootLayout({ children }) {
   const hideNavbar = pathname === "/login";
 
   return (
-    <html lang="en">
+    <html lang="en" className="bg-black">
       <body
         className={`
           ${geistSans.variable} ${geistMono.variable}
           min-h-screen bg-black text-white antialiased
         `}
       >
-        <div className="min-h-screen flex flex-col">
-          {!hideNavbar && <NavBar />}
+        {/* Full page wrapper */}
+        <div className="min-h-screen flex flex-col bg-black">
 
-          {/* Global responsive container for all pages */}
-          <main className="flex-1 w-full">
-            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          {/* Navbar */}
+          {!hideNavbar && (
+            <div className="bg-black border-b border-zinc-800">
+              <NavBar />
+            </div>
+          )}
+
+          {/* Main content */}
+          <main className="flex-1 w-full bg-black">
+            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
               {children}
             </div>
           </main>
 
-          {/* Small bottom spacing so content doesn't feel tight on mobile */}
-          <div className="h-8" />
+          {/* Bottom spacing */}
+          <footer className="h-8 bg-black" />
+
         </div>
       </body>
     </html>

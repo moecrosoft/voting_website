@@ -20,7 +20,7 @@ export default function NavBar() {
 
     return `
       px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base
-      transition-all duration-200 border border-white/20
+      transition-all duration-200 border border-white/20 
       ${
         active
           ? "bg-black text-white shadow-md border-white/40"
@@ -30,13 +30,16 @@ export default function NavBar() {
   }
 
   async function logout() {
+    // If you ARE using /api/logout, keep this:
     await fetch("/api/logout", { method: "POST" });
-    router.push("/login");
+
+    // Redirect
+    router.replace("/login");
     router.refresh();
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-red-600/90 backdrop-blur border-b border-red-700/40">
+    <nav className="sticky top-0 z-50 relative bg-red-600/90 backdrop-blur border-b border-red-700/40">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center justify-between gap-3">
           {/* Brand */}
@@ -67,6 +70,7 @@ export default function NavBar() {
                 hover:bg-white hover:text-red-600 hover:border-white
                 transition-all duration-300 shadow-md
                 hover:scale-[1.03]
+                cursor-pointer
               "
             >
               Logout
@@ -76,7 +80,7 @@ export default function NavBar() {
           {/* Mobile menu button */}
           <button
             onClick={() => setOpen((v) => !v)}
-            className="md:hidden px-3 py-2 rounded-lg bg-red-700/40 border border-white/20"
+            className="md:hidden px-3 py-2 rounded-lg bg-red-700/40 border border-white/20 cursor-pointer"
             aria-label="Toggle menu"
           >
             <span className="text-white text-lg">{open ? "✕" : "☰"}</span>
@@ -85,7 +89,7 @@ export default function NavBar() {
 
         {/* Mobile dropdown */}
         {open && (
-          <div className="md:hidden mt-3 bg-red-700/30 border border-white/20 rounded-xl p-2 space-y-2">
+          <div className="md:hidden mt-3 bg-red-700/30 border border-white/20 rounded-xl p-2 space-y-2 relative z-[60] pointer-events-auto">
             <Link
               href="/admin"
               className={linkClass("/admin") + " block text-center"}
@@ -113,6 +117,8 @@ export default function NavBar() {
                 bg-black text-white border border-white/30
                 hover:bg-white hover:text-red-600 hover:border-white
                 transition-all duration-300 shadow-md
+                cursor-pointer
+                relative z-[70] pointer-events-auto
               "
             >
               Logout
