@@ -1,7 +1,7 @@
 import { requireSession } from '@/lib/requireSession';
 import VotingClient from './ui';
 
-export default function VotingPage() {
-    requireSession();
+export default async function VotingPage() {
+    await requireSession();
     return <VotingClient />;
 }

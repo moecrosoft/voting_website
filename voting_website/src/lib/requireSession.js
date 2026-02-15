@@ -1,9 +1,12 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import "server-only";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export async function requireSession(){
+export async function requireSession() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get("session")?.value;
 
-    const cookieStore = await cookies();
-    const session = cookieStore.get('session')?.value;
-    if (session !== 'true') redirect('/login');
+  if (session !== "true") {
+    redirect("/login");
+  }
 }
