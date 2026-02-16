@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,7 +11,6 @@ export default function NavBar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -19,112 +19,159 @@ export default function NavBar() {
     const active = pathname === path;
 
     return `
-      px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base
-      transition-all duration-200 border border-white/20 
+      px-4 py-2 rounded-lg font-semibold text-sm sm:text-base
+      border
+      transition-all duration-200
+      cursor-pointer
+      select-none
+
       ${
         active
-          ? "bg-black text-white shadow-md border-white/40"
-          : "text-white/90 hover:bg-red-700 hover:text-white hover:border-white/40"
+          ? `
+            bg-black text-white border-white/40
+            shadow-md shadow-black/40
+            `
+          : `
+            bg-black/20 text-white border-white/20
+            hover:bg-red-700 hover:border-white
+            hover:shadow-md hover:shadow-red-900/30
+            active:scale-[0.96]
+            `
       }
     `;
   }
 
   async function logout() {
-    // If you ARE using /api/logout, keep this:
-    await fetch("/api/logout", { method: "POST" });
-
-    // Redirect
+    await fetch("/api/logout", { method: "POST" }).catch(() => {});
     router.replace("/login");
     router.refresh();
   }
 
   return (
-    <nav className="sticky top-0 z-50 relative bg-red-600/90 backdrop-blur border-b border-red-700/40">
+    <nav className="sticky top-0 z-50 bg-red-600 border-b border-red-700 shadow-md">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center justify-between gap-3">
-          {/* Brand */}
-          <Link href="/admin" className="font-bold tracking-wide text-white">
-            Voting
+
+        <div className="flex items-center justify-between">
+
+          {/* Logo */}
+          <Link href="/admin" className="flex items-center hover:opacity-90 transition">
+            <Image
+              src="/itc.jpg"
+              alt="Voting"
+              width={180}
+              height={60}
+              priority
+              className="
+                h-10 sm:h-12 md:h-14
+                w-auto object-contain
+                rounded-lg
+              "
+            />
           </Link>
 
+
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-2 bg-red-700/30 px-2 py-2 rounded-xl shadow-inner border border-white/10">
+          <div className="hidden md:flex items-center gap-3">
+
             <Link href="/admin" className={linkClass("/admin")}>
               Admin
             </Link>
+
             <Link href="/leaderboard" className={linkClass("/leaderboard")}>
               Leaderboard
             </Link>
+
             <Link href="/voting" className={linkClass("/voting")}>
               Voting
             </Link>
+
           </div>
+
 
           {/* Desktop logout */}
           <div className="hidden md:block">
+
             <button
               onClick={logout}
               className="
-                px-4 py-2 rounded-lg font-semibold
+                px-5 py-2 rounded-lg font-semibold
                 bg-black text-white border border-white/30
+                shadow-md shadow-black/40
+
                 hover:bg-white hover:text-red-600 hover:border-white
-                transition-all duration-300 shadow-md
-                hover:scale-[1.03]
-                cursor-pointer
+                hover:shadow-lg hover:shadow-red-900/30
+
+                active:scale-[0.96]
+
+                transition-all duration-200
+                cursor-pointer select-none
               "
             >
               Logout
             </button>
+
           </div>
+
 
           {/* Mobile menu button */}
           <button
-            onClick={() => setOpen((v) => !v)}
-            className="md:hidden px-3 py-2 rounded-lg bg-red-700/40 border border-white/20 cursor-pointer"
-            aria-label="Toggle menu"
+            onClick={() => setOpen(!open)}
+            className="
+              md:hidden px-4 py-2 rounded-lg
+              bg-black/30 border border-white/30
+              shadow-md
+
+              hover:bg-black/50
+              active:scale-[0.96]
+
+              transition cursor-pointer
+            "
           >
-            <span className="text-white text-lg">{open ? "✕" : "☰"}</span>
+            <span className="text-white text-lg">
+              {open ? "✕" : "☰"}
+            </span>
           </button>
+
         </div>
 
-        {/* Mobile dropdown */}
+
+        {/* Mobile menu */}
         {open && (
-          <div className="md:hidden mt-3 bg-red-700/30 border border-white/20 rounded-xl p-2 space-y-2 relative z-[60] pointer-events-auto">
-            <Link
-              href="/admin"
-              className={linkClass("/admin") + " block text-center"}
-            >
+          <div className="md:hidden mt-4 space-y-2">
+
+            <Link href="/admin" className={linkClass("/admin") + " block text-center"}>
               Admin Panel
             </Link>
-            <Link
-              href="/leaderboard"
-              className={linkClass("/leaderboard") + " block text-center"}
-            >
+
+            <Link href="/leaderboard" className={linkClass("/leaderboard") + " block text-center"}>
               Leaderboard
             </Link>
-            <Link
-              href="/voting"
-              className={linkClass("/voting") + " block text-center"}
-            >
+
+            <Link href="/voting" className={linkClass("/voting") + " block text-center"}>
               Voting
             </Link>
 
             <button
               onClick={logout}
               className="
-                w-full mt-1
-                px-4 py-2 rounded-lg font-semibold
+                w-full px-5 py-2 rounded-lg font-semibold
                 bg-black text-white border border-white/30
-                hover:bg-white hover:text-red-600 hover:border-white
-                transition-all duration-300 shadow-md
-                cursor-pointer
-                relative z-[70] pointer-events-auto
+                shadow-md shadow-black/40
+
+                hover:bg-white hover:text-red-600
+                hover:shadow-lg hover:shadow-red-900/30
+
+                active:scale-[0.96]
+
+                transition cursor-pointer
               "
             >
               Logout
             </button>
+
           </div>
         )}
+
       </div>
     </nav>
   );

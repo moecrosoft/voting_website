@@ -7,3 +7,15 @@ create table if not exists public.projects(
     vote_count int not null default 0,
     created_at timestamptz not null default now()
 );
+
+create or replace function public.increment_votes(project_ids bigint[])
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update public.projects
+  set vote_count = vote_count + 1
+  where id = any(project_ids);
+end;
+$$;

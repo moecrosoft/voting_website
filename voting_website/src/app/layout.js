@@ -1,11 +1,7 @@
 // app/layout.js
-"use client";
-
-import { usePathname } from "next/navigation";
-import NavBar from "@/components/navBar";
-
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Geist, Geist_Mono } from "next/font/google";
+import NavBarWrapper from "@/components/NavBarWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,38 +13,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export default function RootLayout({ children }) {
-  const pathname = usePathname();
-  const hideNavbar = pathname === "/login";
+export const metadata = {
+  title: "SIM ITC",
+  icons: {
+    icon: "/itc2.png", 
+  },
+};
 
+export default function RootLayout({ children }) {
   return (
     <html lang="en" className="bg-black">
       <body
         className={`
           ${geistSans.variable} ${geistMono.variable}
-          min-h-screen bg-black text-white antialiased
+          min-h-[100dvh] bg-black text-white antialiased
+          overflow-x-hidden
         `}
       >
-        {/* Full page wrapper */}
-        <div className="min-h-screen flex flex-col bg-black">
+        <div className="min-h-[100dvh] flex flex-col bg-black">
+          <NavBarWrapper />
 
-          {/* Navbar */}
-          {!hideNavbar && (
-            <div className="bg-black border-b border-zinc-800">
-              <NavBar />
-            </div>
-          )}
-
-          {/* Main content */}
           <main className="flex-1 w-full bg-black">
             <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
               {children}
             </div>
           </main>
 
-          {/* Bottom spacing */}
           <footer className="h-8 bg-black" />
-
         </div>
       </body>
     </html>

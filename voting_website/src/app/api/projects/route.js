@@ -23,7 +23,7 @@ export async function GET(){
 }
 
 export async function POST(req) {
-    if (!mustBeAdmin()) {
+    if (! await mustBeAdmin()) {
         return NextResponse.json({error: 'Unauthorized'},{status: 401});
     }
 
@@ -42,4 +42,16 @@ export async function POST(req) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400});
     return NextResponse.json({ ok: true })
+}
+
+export async function DELETE(req) {
+  const supabase = supabaseAdmin();
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+
+  const { error } = await supabase.from("projects").delete().eq("id", id);
+  if (error) return Response.json({ error: error.message }, { status: 400 });
+
+  return Response.json({ ok: true });
 }

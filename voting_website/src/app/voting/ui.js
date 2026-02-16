@@ -88,7 +88,7 @@ export default function VotingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white pb-28">
+    <main className="min-h-[100dvh] bg-black text-white pb-28">
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black border-b border-gray-800">
@@ -110,12 +110,15 @@ export default function VotingPage() {
 
 
       {/* Projects grid */}
-      <div className="max-w-6xl mx-auto px-6 py-6 grid gap-6
-                      grid-cols-1
-                      sm:grid-cols-2
-                      lg:grid-cols-3">
-
-        {projects.map(p => {
+      <div
+        className="
+          max-w-6xl mx-auto px-6 py-6 grid gap-6
+          grid-cols-1
+          sm:grid-cols-2
+          lg:grid-cols-3
+        "
+      >
+        {projects.map((p) => {
           const isSelected = selected.has(p.id);
 
           return (
@@ -128,6 +131,7 @@ export default function VotingPage() {
                 transition-all duration-200
                 hover:scale-[1.02] hover:border-red-500
                 active:scale-[0.98]
+                flex flex-col
                 ${isSelected ? "ring-4 ring-red-500 border-red-500" : ""}
               `}
             >
@@ -142,7 +146,7 @@ export default function VotingPage() {
               )}
 
               {/* Content */}
-              <div className="p-5">
+              <div className="p-5 flex flex-col flex-1">
 
                 <div className="text-sm text-gray-400 mb-1">
                   Group {p.group}
@@ -152,18 +156,24 @@ export default function VotingPage() {
                   {p.title}
                 </h3>
 
-                <p className="text-gray-400 text-sm">
-                  {p.description}
+                {/* Description fixed height */}
+                <p className="text-gray-400 text-sm min-h-[40px]">
+                  {p.description || "\u00A0"}
                 </p>
+
+                {/* Push button down */}
+                <div className="flex-1"></div>
 
                 {/* Select indicator */}
                 <div className="mt-4">
                   <div
                     className={`
                       text-center py-2 rounded-lg font-medium transition
-                      ${isSelected
-                        ? "bg-red-600 text-white"
-                        : "bg-zinc-800 text-gray-300"}
+                      ${
+                        isSelected
+                          ? "bg-red-600 text-white"
+                          : "bg-zinc-800 text-gray-300"
+                      }
                     `}
                   >
                     {isSelected ? "✓ Selected" : "Tap to Select"}
@@ -174,13 +184,11 @@ export default function VotingPage() {
             </div>
           );
         })}
-
       </div>
 
 
       {/* Sticky Submit Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-zinc-800">
-
         <div className="max-w-6xl mx-auto px-6 py-4">
 
           <button
@@ -207,7 +215,6 @@ export default function VotingPage() {
           </button>
 
         </div>
-
       </div>
 
     </main>

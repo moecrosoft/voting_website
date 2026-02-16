@@ -11,13 +11,6 @@ export async function handleLogin(prevState, formData) {
   const envUser = (process.env.ADMIN_USERNAME ?? "").trim();
   const envHash = (process.env.ADMIN_PASSWORD ?? "").trim().replace(/\r/g, "");
 
-  console.log("Input username:", username);
-  console.log("Input password:", password);
-
-  console.log("Env username:", process.env.ADMIN_USERNAME);
-  console.log("Env hash exists:", !!process.env.ADMIN_PASSWORD);
-  console.log("Env hash start:", process.env.ADMIN_PASSWORD?.slice(0, 4));
-
   if (!envUser || !envHash) return { error: "Missing env vars" };
 
   const isUsernameValid = username === envUser;
@@ -31,7 +24,7 @@ export async function handleLogin(prevState, formData) {
 
   cookieStore.set("session", "true", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // important for localhost
+    secure: process.env.NODE_ENV === "production", 
     maxAge: 3600 * 24,
     path: "/",
   });

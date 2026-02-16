@@ -8,7 +8,7 @@ export default function LeaderboardPage() {
   const supabaseRef = useRef(null);
   const [projects, setProjects] = useState([]);
 
-  // Debounce reload so many UPDATE events don't spam load()
+  // debounce so rapid updates don't spam load()
   const reloadTimerRef = useRef(null);
 
   async function load() {
@@ -16,12 +16,12 @@ export default function LeaderboardPage() {
     if (!supabase) return;
 
     const { data, error } = await supabase.from("projects").select("*");
-
     if (error) {
       alert(error.message);
       return;
     }
 
+    // sort: votes desc, created_at desc
     const sorted = [...(data || [])].sort((a, b) => {
       const va = Number(a.vote_count ?? 0);
       const vb = Number(b.vote_count ?? 0);
@@ -49,11 +49,11 @@ export default function LeaderboardPage() {
 
     load();
 
+    // ✅ FIXED: first arg must be "postgres_changes" (Supabase v2)
     const ch = supabase
-      .channel("projects-leaderboard-ws")
+      .channel("leaderboard")
       .on(
         "postgres_changes",
-        // listen to all changes so INSERT/DELETE also animate nicely
         { event: "*", schema: "public", table: "projects" },
         () => scheduleLoad()
       )
@@ -71,21 +71,42 @@ export default function LeaderboardPage() {
     };
   }, []);
 
-  function getRankStyle(index) {
-    if (index === 0) return "border-yellow-400 ring-yellow-400";
-    if (index === 1) return "border-gray-300 ring-gray-300";
-    if (index === 2) return "border-orange-400 ring-orange-400";
-    return "border-zinc-800";
+  // ---------- TIES: merge items with same vote_count into one row ----------
+  function groupByVotes(list) {
+    const groups = [];
+    for (const p of list) {
+      const votes = Number(p.vote_count ?? 0);
+      const last = groups[groups.length - 1];
+
+      if (last && last.votes === votes) last.items.push(p);
+      else groups.push({ votes, items: [p] });
+    }
+    return groups;
   }
 
-  function getRankIcon(index) {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return `#${index + 1}`;
+  // ✅ Dense ranking: 1, 2, 3... (ties share same rank but next rank doesn't disappear)
+  function computeDenseRanks(groups) {
+    return groups.map((_, i) => i + 1);
   }
 
-  const cardMotion = {
+  const groups = groupByVotes(projects);
+  const ranks = computeDenseRanks(groups);
+
+  function rankBadge(rank) {
+    if (rank === 1) return "🥇";
+    if (rank === 2) return "🥈";
+    if (rank === 3) return "🥉";
+    return `#${rank}`;
+  }
+
+  function rankGradient(rank) {
+    if (rank === 1) return "from-yellow-400/20";
+    if (rank === 2) return "from-gray-300/15";
+    if (rank === 3) return "from-orange-400/15";
+    return "from-red-500/10";
+  }
+
+  const motionProps = {
     layout: true,
     initial: { opacity: 0, y: 10 },
     animate: { opacity: 1, y: 0 },
@@ -93,78 +114,167 @@ export default function LeaderboardPage() {
     transition: { type: "spring", stiffness: 500, damping: 35 },
   };
 
+  const topGroups = groups.slice(0, 3);
+
   return (
-    <main className="min-h-screen bg-black text-white pb-10">
+    <main className="min-h-[100dvh] bg-black text-white pb-12">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black border-b border-zinc-800">
         <div className="max-w-6xl mx-auto px-6 py-5">
-          <h1 className="text-3xl md:text-4xl font-bold text-red-500 tracking-wide">
+          <h1 className="text-4xl font-bold text-red-500 tracking-wide">
             Leaderboard
           </h1>
           <p className="text-gray-400 mt-1">Live Results</p>
         </div>
       </div>
 
-      {/* Podium Top 3 */}
+      {/* Podium (Top 3 vote groups) */}
       <div className="max-w-6xl mx-auto px-6 mt-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <AnimatePresence>
-            {projects.slice(0, 3).map((p, i) => (
-              <motion.div
-                key={p.id}
-                {...cardMotion}
-                className={`
-                  bg-zinc-900 border rounded-xl p-5 text-center
-                  shadow-lg ring-2 ${getRankStyle(i)}
-                `}
-              >
-                <div className="text-4xl mb-2">{getRankIcon(i)}</div>
+            {topGroups.map((g, i) => {
+              const rank = ranks[i] ?? i + 1;
+              const tied = g.items.length > 1;
 
-                <div className="text-lg font-semibold">Group {p.group}</div>
+              return (
+                <motion.div
+                  key={`${g.votes}-${i}`}
+                  {...motionProps}
+                  className="
+                    relative overflow-hidden
+                    bg-zinc-900 border border-zinc-800
+                    rounded-2xl p-5 text-center
+                    shadow-lg ring-1 ring-white/10
+                  "
+                >
+                  <div
+                    className={`absolute inset-0 pointer-events-none bg-gradient-to-r ${rankGradient(
+                      rank
+                    )} to-transparent`}
+                  />
 
-                <div className="text-gray-400 text-sm mb-2">{p.title}</div>
+                  <div className="relative">
+                    <div className="text-4xl mb-2">{rankBadge(rank)}</div>
+                    <div className="text-sm text-gray-400 mb-1">Rank #{rank}</div>
 
-                <div className="text-3xl font-bold text-red-500">
-                  {p.vote_count ?? 0}
-                </div>
+                    {/* Groups side-by-side with "/" */}
+                    <div className="text-lg font-semibold text-white leading-tight">
+                      {g.items.map((p, idx) => (
+                        <span key={p.id}>
+                          Group {p.group}
+                          {idx < g.items.length - 1 && (
+                            <span className="mx-2 text-gray-500">/</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
 
-                <div className="text-gray-500 text-sm">votes</div>
-              </motion.div>
-            ))}
+                    {/* Titles side-by-side with "/" */}
+                    <div className="text-gray-400 text-sm mt-1 line-clamp-2">
+                      {g.items.map((p, idx) => (
+                        <span key={p.id}>
+                          {p.title}
+                          {idx < g.items.length - 1 && (
+                            <span className="mx-2 text-gray-600">/</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="text-3xl font-bold text-red-500">{g.votes}</div>
+                      <div className="text-gray-500 text-sm">votes</div>
+                    </div>
+
+                    {tied && (
+                      <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/10 text-xs text-gray-300">
+                        <span className="font-semibold text-white/90">Tie</span>
+                        <span>•</span>
+                        <span>{g.items.length} groups</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Full leaderboard list */}
+      {/* Full leaderboard (ties merged into one row) */}
       <div className="max-w-6xl mx-auto px-6 mt-6 space-y-3">
         <AnimatePresence>
-          {projects.map((p, i) => (
-            <motion.div
-              key={p.id}
-              {...cardMotion}
-              className={`
-                bg-zinc-900 border border-zinc-800
-                rounded-xl px-5 py-4
-                flex items-center justify-between
-                hover:border-red-500
-              `}
-            >
-              <div className="flex items-center gap-4">
-                <div className="text-xl font-bold text-red-500 w-10">
-                  {getRankIcon(i)}
+          {groups.map((g, i) => {
+            const rank = ranks[i] ?? i + 1;
+            const tied = g.items.length > 1;
+
+            return (
+              <motion.div
+                key={`${g.votes}-${i}`}
+                {...motionProps}
+                className="
+                  relative overflow-hidden
+                  bg-zinc-900 border border-zinc-800
+                  rounded-2xl px-5 py-4
+                  flex items-center justify-between gap-4
+                  hover:border-red-500 transition
+                "
+              >
+                <div
+                  className={`absolute inset-0 pointer-events-none bg-gradient-to-r ${rankGradient(
+                    rank
+                  )} to-transparent`}
+                />
+
+                {/* Left */}
+                <div className="relative flex items-center gap-4 min-w-0">
+                  <div className="w-16 flex items-center justify-center">
+                    <div className="text-xl font-bold text-red-500">
+                      {rankBadge(rank)}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="font-semibold text-lg truncate">
+                      {g.items.map((p, idx) => (
+                        <span key={p.id}>
+                          Group {p.group}
+                          {idx < g.items.length - 1 && (
+                            <span className="mx-2 text-gray-500">/</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="text-gray-400 text-sm truncate">
+                      {g.items.map((p, idx) => (
+                        <span key={p.id}>
+                          {p.title}
+                          {idx < g.items.length - 1 && (
+                            <span className="mx-2 text-gray-600">/</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+
+                    {tied && (
+                      <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/10 text-xs text-gray-300">
+                        <span className="font-semibold text-white/90">Tie</span>
+                        <span>•</span>
+                        <span>{g.items.length} groups</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <div className="font-semibold text-lg">Group {p.group}</div>
-                  <div className="text-gray-400 text-sm">{p.title}</div>
+                {/* Right */}
+                <div className="relative text-right shrink-0">
+                  <div className="text-2xl font-bold text-white">{g.votes}</div>
+                  <div className="text-xs text-gray-400">votes</div>
                 </div>
-              </div>
-
-              <div className="text-2xl font-bold text-white">
-                {p.vote_count ?? 0}
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
     </main>
