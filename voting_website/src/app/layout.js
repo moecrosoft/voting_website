@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "SIM ITC",
   icons: {
-    icon: "/itc2.png",
+    icon: "/itc.png",
+    apple: '/itc.png'
   },
 };
 
