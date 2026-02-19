@@ -53,7 +53,7 @@ export default function VotingPage() {
   }, []);
 
   function toggle(id) {
-    setSelected(prev => {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else {
@@ -88,36 +88,22 @@ export default function VotingPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-black text-white pb-28">
-
+    <main className="min-h-[100dvh] bg-black text-white flex flex-col justify-between">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black border-b border-gray-800">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
-
-          <h1 className="text-3xl md:text-4xl font-bold text-red-500 tracking-wide">
-            Voting
+        <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-red-500 tracking-wide leading-snug">
+            What are your three favourite projects?
           </h1>
-
-          <div className="text-lg font-medium">
+          <div className="text-lg font-semibold mt-2 md:mt-0">
             Selected:
-            <span className="ml-2 text-red-500 font-bold">
-              {selected.size} / 3
-            </span>
+            <span className="ml-2 text-red-500 font-extrabold">{selected.size} / 3</span>
           </div>
-
         </div>
       </div>
 
-
       {/* Projects grid */}
-      <div
-        className="
-          max-w-6xl mx-auto px-6 py-6 grid gap-6
-          grid-cols-1
-          sm:grid-cols-2
-          lg:grid-cols-3
-        "
-      >
+      <div className="max-w-6xl mx-auto px-6 py-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {projects.map((p) => {
           const isSelected = selected.has(p.id);
 
@@ -126,97 +112,77 @@ export default function VotingPage() {
               key={p.id}
               onClick={() => toggle(p.id)}
               className={`
-                bg-zinc-900 rounded-xl border border-zinc-800
-                cursor-pointer
-                transition-all duration-200
-                hover:scale-[1.02] hover:border-red-500
-                active:scale-[0.98]
-                flex flex-col
-                ${isSelected ? "ring-4 ring-red-500 border-red-500" : ""}
+                relative cursor-pointer rounded-xl overflow-hidden transition-all duration-200
+                border-2 ${isSelected ? "border-red-500" : "border-zinc-800"}
+                shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]
               `}
             >
-
-              {/* Image */}
               {p.image_url && (
-                <img
-                  src={p.image_url}
-                  alt=""
-                  className="w-full h-48 object-cover rounded-t-xl"
-                />
-              )}
-
-              {/* Content */}
-              <div className="p-5 flex flex-col flex-1">
-
-                <div className="text-sm text-gray-400 mb-1">
-                  Group {p.group}
-                </div>
-
-                <h3 className="text-xl font-semibold mb-2 text-white">
-                  {p.title}
-                </h3>
-
-                {/* Description fixed height */}
-                <p className="text-gray-400 text-sm min-h-[40px]">
-                  {p.description || "\u00A0"}
-                </p>
-
-                {/* Push button down */}
-                <div className="flex-1"></div>
-
-                {/* Select indicator */}
-                <div className="mt-4">
-                  <div
-                    className={`
-                      text-center py-2 rounded-lg font-medium transition
-                      ${
-                        isSelected
-                          ? "bg-red-600 text-white"
-                          : "bg-zinc-800 text-gray-300"
-                      }
-                    `}
-                  >
-                    {isSelected ? "✓ Selected" : "Tap to Select"}
+                <div className="relative w-full aspect-video">
+                  <img
+                    src={p.image_url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Stronger gradient for text readability */}
+                  <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-black/95 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <div className="text-sm font-extrabold text-white mb-1">Group {p.group}</div>
+                    <h3 className="text-2xl font-extrabold mb-1">{p.title}</h3>
+                    <p className="text-sm font-extrabold text-white line-clamp-3">
+                      {p.description || "\u00A0"}
+                    </p>
                   </div>
                 </div>
+              )}
 
+              {/* Selection indicator */}
+              <div className="absolute top-2 right-2">
+                <div
+                  className={`
+                    w-6 h-6 rounded-full border-2 flex items-center justify-center
+                    ${isSelected ? "bg-red-500 border-red-500" : "bg-black/50 border-gray-400"}
+                  `}
+                >
+                  {isSelected && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="white"
+                      className="w-4 h-4"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-
-      {/* Sticky Submit Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-zinc-800">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-
+      {/* Submit button */}
+      <div className="bg-black border-t border-zinc-800 py-4">
+        <div className="max-w-6xl mx-auto flex justify-center">
           <button
             onClick={submitVotes}
             disabled={loading || selected.size === 0}
             className="
-              w-full
-              py-4
-              text-xl
-              font-semibold
-              rounded-xl
-              bg-red-600
-              text-white
-              hover:bg-red-700
+              w-1/2 sm:w-1/3 md:w-1/4 py-2 text-lg font-extrabold rounded-xl
+              bg-red-600 text-white hover:bg-red-700
               active:scale-[0.98]
-              disabled:bg-zinc-700
-              disabled:text-gray-400
-              disabled:cursor-not-allowed
-              transition
-              cursor-pointer
+              disabled:bg-zinc-700 disabled:text-gray-400 disabled:cursor-not-allowed
+              transition cursor-pointer
             "
           >
             {loading ? "Submitting..." : "Submit Votes"}
           </button>
-
         </div>
       </div>
-
     </main>
   );
 }

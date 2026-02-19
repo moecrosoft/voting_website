@@ -1,7 +1,6 @@
-// app/layout.js
-import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
-import AppShell from "@/components/AppShell";
+import "./globals.css";
+import NavBar from "@/components/navBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,24 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "SIM ITC",
+  title: "ITC NFC",
   icons: {
-    icon: "/itc.png",
-    apple: '/itc.png'
-  },
+    icon: '/itc.png'
+  }
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="bg-black">
-      <body
-        className={`
-          ${geistSans.variable} ${geistMono.variable}
-          bg-black text-white antialiased
-          overflow-x-hidden
-        `}
-      >
-        <AppShell>{children}</AppShell>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <NavBar />
+        {children}
       </body>
     </html>
   );
