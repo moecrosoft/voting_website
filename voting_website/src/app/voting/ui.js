@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { supabaseBrowser } from "@/lib/supabase-browser";
+import { useEffect, useState } from "react";
+import { onProjectsUpdate } from "@/lib/supabase-events";
 
 export default function VotingUI() {
   const [projects, setProjects] = useState([]);
@@ -9,8 +9,6 @@ export default function VotingUI() {
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const supabaseRef = useRef(null);
-  const subscriptionRef = useRef(null);
 
   async function loadProjects() {
     try {
@@ -25,28 +23,11 @@ export default function VotingUI() {
   }
 
   useEffect(() => {
-    supabaseRef.current = supabaseBrowser();
     loadProjects();
 
-    // Realtime subscription to update votes instantly
-    if (subscriptionRef.current) supabaseRef.current.removeChannel(subscriptionRef.current);
-    subscriptionRef.current = supabaseRef.current
-      .channel("projects-voting")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "projects" },
-        (payload) => {
-          const updated = payload.new;
-          setProjects((prev) =>
-            prev.map((p) => (p.id === updated.id ? updated : p))
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      if (subscriptionRef.current) supabaseRef.current.removeChannel(subscriptionRef.current);
-    };
+    // Realtime subscription
+    const unsub = onProjectsUpdate(() => loadProjects());
+    return () => unsub();
   }, []);
 
   function toggle(id) {
@@ -62,11 +43,11 @@ export default function VotingUI() {
   }
 
   async function submitVotes() {
-    if (selected.size < 1 || selected.size > 3) return;
+    const ids = Array.from(selected);
+    if (ids.length < 1 || ids.length > 3) return;
     setLoading(true);
-
     try {
-      for (const id of selected) {
+      for (const id of ids) {
         const res = await fetch(`/api/projects?id=${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -78,12 +59,13 @@ export default function VotingUI() {
 
       setShowConfirm(false);
       setShowSuccess(true);
+
       setTimeout(() => {
         setShowSuccess(false);
         setSelected(new Set());
       }, 1600);
     } catch (err) {
-      console.error("Vote error:", err);
+      console.error(err);
       alert(err.message || "Vote failed");
     } finally {
       setLoading(false);

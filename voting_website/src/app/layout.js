@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "ITC NFC",
+  title: "ITC VOTING",
   icons: {
     icon: '/itc.png'
   }

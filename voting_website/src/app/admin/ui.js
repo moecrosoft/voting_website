@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { onProjectsUpdate } from "@/lib/supabase-events";
 
 export default function AdminClient() {
   const [projects, setProjects] = useState([]);
@@ -9,18 +10,20 @@ export default function AdminClient() {
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [originalData, setOriginalData] = useState({});
-  const [deletingId, setDeletingId] = useState(null);
-  const [updatingId, setUpdatingId] = useState(null);
+  const [popup, setPopup] = useState({ type: "", id: null });
+  const [submitUpdating, setSubmitUpdating] = useState(false);
+
+  const [voteUpdatingId, setVoteUpdatingId] = useState(null);   // for vote buttons
+  const [deleteUpdatingId, setDeleteUpdatingId] = useState(null); // for delete button
 
   const fileInputRef = useRef(null);
   const formRef = useRef(null);
   const cardRefs = useRef({});
 
-  const NAVBAR_HEIGHT = 72; // sticky navbar height
-  const TITLE_HEIGHT = 48; // form title height for extra offset
+  const NAVBAR_HEIGHT = 72;
+  const TITLE_HEIGHT = 48;
 
   async function loadProjects() {
     try {
@@ -35,6 +38,8 @@ export default function AdminClient() {
 
   useEffect(() => {
     loadProjects();
+    const unsub = onProjectsUpdate(() => loadProjects());
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -60,8 +65,6 @@ export default function AdminClient() {
     setTitle(p.title || "");
     setDescription(p.description || "");
     setFile(null);
-
-    // Scroll form into view with navbar and title offset
     setTimeout(() => scrollToOffsetTop(formRef.current, TITLE_HEIGHT + 16), 50);
   }
 
@@ -74,30 +77,32 @@ export default function AdminClient() {
     setDescription("");
     setFile(null);
     setPreviewUrl("");
-
-    // Scroll back to the top of the edited card
     if (prevEditingId && cardRefs.current[prevEditingId]) {
       scrollToOffsetTop(cardRefs.current[prevEditingId]);
     }
   }
 
   async function deleteProject(id) {
-    if (!confirm("Delete this project?")) return;
-    setDeletingId(id);
+    setPopup({ type: "delete", id });
+  }
+
+  async function confirmDelete(id) {
+    setDeleteUpdatingId(id);
     try {
       const res = await fetch(`/api/projects?id=${id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Delete failed");
+      setPopup({ type: "", id: null });
       await loadProjects();
     } catch (err) {
       alert(err.message || "Delete failed");
     } finally {
-      setDeletingId(null);
+      setDeleteUpdatingId(null);
     }
   }
 
   async function changeVote(id, delta) {
-    setUpdatingId(id);
+    setVoteUpdatingId(id);
     try {
       const res = await fetch(`/api/projects?id=${id}`, {
         method: "PATCH",
@@ -110,7 +115,7 @@ export default function AdminClient() {
     } catch (err) {
       alert(err.message || "Vote update failed");
     } finally {
-      setUpdatingId(null);
+      setVoteUpdatingId(null);
     }
   }
 
@@ -128,7 +133,7 @@ export default function AdminClient() {
     e.preventDefault();
     if (!group.trim() || !title.trim()) return alert("Group and title required");
 
-    setLoading(true);
+    setSubmitUpdating(true);
     try {
       const image_url = file ? await uploadImage(file) : originalData.image_url || null;
       const payload = {};
@@ -148,18 +153,12 @@ export default function AdminClient() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Save failed");
 
-      const editedId = editingId;
       cancelEdit();
       await loadProjects();
-
-      // Scroll back to top of edited card
-      if (editedId && cardRefs.current[editedId]) {
-        scrollToOffsetTop(cardRefs.current[editedId]);
-      }
-
     } catch (err) {
       alert(err.message || "Submit failed");
-      setLoading(false);
+    } finally {
+      setSubmitUpdating(false);
     }
   }
 
@@ -198,7 +197,7 @@ export default function AdminClient() {
 
           <div className="flex space-x-4">
             {editingId && <button type="button" onClick={cancelEdit} className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl font-semibold cursor-pointer">Cancel</button>}
-            <button type="submit" disabled={loading} className="px-5 py-2 bg-red-700 hover:bg-red-600 rounded-xl font-semibold cursor-pointer">{loading ? (editingId ? "Updating..." : "Saving...") : (editingId ? "Update" : "Add Project")}</button>
+            <button type="submit" disabled={submitUpdating} className="px-5 py-2 bg-red-700 hover:bg-red-600 rounded-xl font-semibold cursor-pointer">{submitUpdating ? (editingId ? "Updating..." : "Saving...") : (editingId ? "Update" : "Add Project")}</button>
           </div>
         </form>
 
@@ -218,13 +217,13 @@ export default function AdminClient() {
                     <div className="flex items-center justify-between mt-4">
                       <span className="text-xl font-bold text-white">{p.vote_count ?? 0} votes</span>
                       <div className="flex space-x-2">
-                        <button onClick={() => changeVote(p.id, 1)} disabled={updatingId === p.id} className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-semibold cursor-pointer">+1</button>
-                        <button onClick={() => changeVote(p.id, -1)} disabled={updatingId === p.id} className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer">-1</button>
+                        <button onClick={() => changeVote(p.id, 1)} disabled={voteUpdatingId === p.id} className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-semibold cursor-pointer">+1</button>
+                        <button onClick={() => changeVote(p.id, -1)} disabled={voteUpdatingId === p.id} className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer">-1</button>
                       </div>
                     </div>
                     <div className="flex justify-between mt-2">
                       <button onClick={() => startEdit(p)} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-semibold cursor-pointer">Edit</button>
-                      <button onClick={() => deleteProject(p.id)} disabled={deletingId === p.id} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer">{deletingId === p.id ? "Deleting..." : "Delete"}</button>
+                      <button onClick={() => deleteProject(p.id)} disabled={deleteUpdatingId === p.id} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer">{deleteUpdatingId === p.id ? "Processing..." : "Delete"}</button>
                     </div>
                   </div>
                 </div>
@@ -232,6 +231,20 @@ export default function AdminClient() {
             </div>
           )}
         </section>
+
+        {/* Delete Confirmation Popup */}
+        {popup.type === "delete" && (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-[90%] max-w-md text-center space-y-4">
+              <h2 className="text-2xl font-extrabold text-red-500">Confirm Delete</h2>
+              <p className="text-gray-400">Are you sure you want to delete this project?</p>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setPopup({ type: "", id: null })} className="flex-1 py-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 cursor-pointer">Cancel</button>
+                <button onClick={() => confirmDelete(popup.id)} className="flex-1 py-3 rounded-lg bg-red-600 hover:bg-red-700 cursor-pointer">Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
