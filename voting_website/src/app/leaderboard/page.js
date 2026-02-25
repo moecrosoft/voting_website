@@ -1,7 +1,13 @@
-import { requireSession } from '@/lib/requireSession';
-import LeaderboardPage from './ui';
+"use client";
 
-export default async function VotingPage() {
-    await requireSession();
-    return <LeaderboardPage />;
+import { useState } from "react";
+import LoginForm from "../login/page";
+import LeaderboardUI from "./ui";
+
+export default function LeaderboardPage() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  if (!loggedIn) return <LoginForm onSuccess={() => setLoggedIn(true)} />;
+
+  return <LeaderboardUI />;
 }

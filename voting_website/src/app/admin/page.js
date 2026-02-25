@@ -1,7 +1,19 @@
-import { requireSession } from '@/lib/requireSession';
-import AdminClient from './ui';
+"use client";
 
-export default async function AdminPage(){
-    await requireSession();
-    return <AdminClient />;
+import { useState } from "react";
+import LoginForm from "../login/page";
+import AdminClient from "./ui";
+import NavBar from '@/components/navBar';
+
+export default function AdminPage() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  if (!loggedIn) return <LoginForm onSuccess={()=>setLoggedIn(true)} />;
+
+  return (
+    <>
+      <NavBar/>
+      <AdminClient />
+    </>
+  );
 }

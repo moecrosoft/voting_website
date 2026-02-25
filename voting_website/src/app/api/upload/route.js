@@ -2,15 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-async function mustBeAdmin() {
-    const cookieStore = await cookies();
-    return cookieStore.get('session')?.value === 'true';
-}
-
 export async function POST(req) {
-    if (!mustBeAdmin()) {
-        return NextResponse.json({ error: 'Unauthorized'}, {status: 401})
-    }
 
     const formData = await req.formData();
     const file = formData.get('file');

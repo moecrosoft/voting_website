@@ -1,36 +1,42 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function AdminClient() {
+  const [projects, setProjects] = useState([]);
   const [group, setGroup] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
-
-  const [projects, setProjects] = useState([]);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [originalData, setOriginalData] = useState({});
+  const [deletingId, setDeletingId] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
 
-  const [previewUrl, setPreviewUrl] = useState("");
   const fileInputRef = useRef(null);
   const formRef = useRef(null);
+  const cardRefs = useRef({});
 
-  // Load projects
-  async function load() {
-    const res = await fetch("/api/projects", { cache: "no-store" });
-    const json = await res.json();
-    if (!res.ok) return alert(json.error);
-    setProjects(json.data || []);
+  const NAVBAR_HEIGHT = 72; // sticky navbar height
+  const TITLE_HEIGHT = 48; // form title height for extra offset
+
+  async function loadProjects() {
+    try {
+      const res = await fetch("/api/projects", { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to load projects");
+      setProjects(json.data || []);
+    } catch (err) {
+      console.error("Load projects error:", err);
+    }
   }
 
   useEffect(() => {
-    load();
+    loadProjects();
   }, []);
 
-  // Image preview
   useEffect(() => {
     if (!file) {
       setPreviewUrl(editingId ? originalData.image_url || "" : "");
@@ -41,57 +47,37 @@ export default function AdminClient() {
     return () => URL.revokeObjectURL(url);
   }, [file, editingId, originalData.image_url]);
 
-  async function uploadImage(selectedFile) {
-    if (!selectedFile) return originalData.image_url || null;
-    const formData = new FormData();
-    formData.append("file", selectedFile);
+  const scrollToOffsetTop = (el, extra = 0) => {
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - NAVBAR_HEIGHT - extra;
+    window.scrollTo({ top, behavior: "smooth" });
+  };
 
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Upload failed");
-    return json.url;
+  function startEdit(p) {
+    setEditingId(p.id);
+    setOriginalData(p);
+    setGroup(p.group || "");
+    setTitle(p.title || "");
+    setDescription(p.description || "");
+    setFile(null);
+
+    // Scroll form into view with navbar and title offset
+    setTimeout(() => scrollToOffsetTop(formRef.current, TITLE_HEIGHT + 16), 50);
   }
 
-  async function submit(e) {
-    e.preventDefault();
-    if (!group.trim() || !title.trim()) return alert("Group and title required");
+  function cancelEdit() {
+    const prevEditingId = editingId;
+    setEditingId(null);
+    setOriginalData({});
+    setGroup("");
+    setTitle("");
+    setDescription("");
+    setFile(null);
+    setPreviewUrl("");
 
-    setLoading(true);
-
-    try {
-      const image_url = await uploadImage(file);
-
-      const payload = {};
-      if (group !== originalData.group) payload.group = group.trim();
-      if (title !== originalData.title) payload.title = title.trim();
-      if (description !== originalData.description) payload.description = description.trim();
-      if (image_url !== originalData.image_url) payload.image_url = image_url;
-
-      const method = editingId ? "PATCH" : "POST";
-      const url = editingId ? `/api/projects?id=${editingId}` : "/api/projects";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Save failed");
-
-      setGroup("");
-      setTitle("");
-      setDescription("");
-      setFile(null);
-      setEditingId(null);
-      setOriginalData({});
-      if (fileInputRef.current) fileInputRef.current.value = "";
-
-      await load();
-      formRef.current?.scrollIntoView({ behavior: "smooth" });
-    } catch (e) {
-      alert(e.message || "Something went wrong");
-    } finally {
-      setLoading(false);
+    // Scroll back to the top of the edited card
+    if (prevEditingId && cardRefs.current[prevEditingId]) {
+      scrollToOffsetTop(cardRefs.current[prevEditingId]);
     }
   }
 
@@ -102,145 +88,143 @@ export default function AdminClient() {
       const res = await fetch(`/api/projects?id=${id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Delete failed");
-      await load();
-    } catch (e) {
-      alert(e.message || "Delete failed");
+      await loadProjects();
+    } catch (err) {
+      alert(err.message || "Delete failed");
     } finally {
       setDeletingId(null);
     }
   }
 
-  function startEdit(p) {
-    setEditingId(p.id);
-    setOriginalData(p);
-    setGroup(p.group);
-    setTitle(p.title);
-    setDescription(p.description);
-    setFile(null);
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  async function changeVote(id, delta) {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/projects?id=${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vote_delta: delta }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Vote update failed");
+      await loadProjects();
+    } catch (err) {
+      alert(err.message || "Vote update failed");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function uploadImage(selectedFile) {
+    if (!selectedFile) return originalData.image_url || null;
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Upload failed");
+    return json.url;
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!group.trim() || !title.trim()) return alert("Group and title required");
+
+    setLoading(true);
+    try {
+      const image_url = file ? await uploadImage(file) : originalData.image_url || null;
+      const payload = {};
+      if (group !== originalData.group) payload.group = group.trim();
+      if (title !== originalData.title) payload.title = title.trim();
+      if (description !== originalData.description) payload.description = description.trim();
+      if (image_url !== originalData.image_url) payload.image_url = image_url;
+
+      const url = editingId ? `/api/projects?id=${editingId}` : "/api/projects";
+      const method = editingId ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Save failed");
+
+      const editedId = editingId;
+      cancelEdit();
+      await loadProjects();
+
+      // Scroll back to top of edited card
+      if (editedId && cardRefs.current[editedId]) {
+        scrollToOffsetTop(cardRefs.current[editedId]);
+      }
+
+    } catch (err) {
+      alert(err.message || "Submit failed");
+      setLoading(false);
+    }
   }
 
   return (
     <main className="min-h-screen bg-black text-white p-6">
       <div className="max-w-5xl mx-auto space-y-8">
-        <h1 className="text-3xl font-bold text-red-500">Admin Panel</h1>
+        <h1 ref={formRef} className="text-3xl font-bold text-red-500">Admin Panel</h1>
 
-        <form
-          ref={formRef}
-          onSubmit={submit}
-          className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 space-y-5 shadow-lg"
-        >
+        <form onSubmit={handleSubmit} className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 space-y-5 shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm text-gray-300">Group</label>
-              <input
-                className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700"
-                value={group}
-                onChange={(e) => setGroup(e.target.value)}
-                placeholder="e.g. 1"
-              />
+              <input value={group} onChange={(e) => setGroup(e.target.value)} placeholder="e.g. 1" className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700" />
             </div>
             <div>
               <label className="text-sm text-gray-300">Title</label>
-              <input
-                className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Project title"
-              />
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Project title" className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700" />
             </div>
           </div>
 
           <div>
             <label className="text-sm text-gray-300">Description</label>
-            <textarea
-              className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-black/40 border border-zinc-800 rounded-xl p-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-5 py-2 bg-black border border-zinc-700 rounded-xl hover:bg-zinc-900 cursor-pointer"
-              >
-                Choose Image
-              </button>
+            <div className="bg-black/40 border border-zinc-800 rounded-xl p-4 cursor-pointer">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-5 py-2 bg-black border border-zinc-700 rounded-xl hover:bg-zinc-900 cursor-pointer">Choose Image</button>
               {file && <p className="text-sm mt-2 text-gray-400">{file.name}</p>}
             </div>
-
             <div className="bg-black/40 border border-zinc-800 rounded-xl p-4 w-full overflow-hidden relative" style={{ aspectRatio: "16/9" }}>
-              {previewUrl ? (
-                <img src={previewUrl} className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-500">
-                  No image
-                </div>
-              )}
+              {previewUrl ? <img src={previewUrl} className="absolute inset-0 w-full h-full object-cover" /> : <div className="h-full flex items-center justify-center text-gray-500">No image</div>}
             </div>
           </div>
 
-          <button
-            disabled={loading}
-            className="px-5 py-2 bg-red-700 hover:bg-red-600 rounded-xl font-semibold cursor-pointer disabled:bg-zinc-700"
-          >
-            {loading ? "Saving..." : editingId ? "Update Project" : "Add Project"}
-          </button>
+          <div className="flex space-x-4">
+            {editingId && <button type="button" onClick={cancelEdit} className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl font-semibold cursor-pointer">Cancel</button>}
+            <button type="submit" disabled={loading} className="px-5 py-2 bg-red-700 hover:bg-red-600 rounded-xl font-semibold cursor-pointer">{loading ? (editingId ? "Updating..." : "Saving...") : (editingId ? "Update" : "Add Project")}</button>
+          </div>
         </form>
 
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">Projects</h2>
-          {projects.length === 0 ? (
-            <div className="text-gray-500">No projects yet.</div>
-          ) : (
+          {projects.length === 0 ? <div className="text-gray-500">No projects yet.</div> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {projects.map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col hover:border-red-700/60 transition"
-                >
+                <div key={p.id} ref={(el) => (cardRefs.current[p.id] = el)} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col">
                   <div className="w-full relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                    {p.image_url ? (
-                      <img src={p.image_url} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-gray-500">
-                        No image
-                      </div>
-                    )}
+                    {p.image_url ? <img src={p.image_url} className="absolute inset-0 w-full h-full object-cover" /> : <div className="h-full flex items-center justify-center text-gray-500">No image</div>}
                   </div>
-
-                  <div className="p-4 flex flex-col flex-1 relative">
+                  <div className="p-4 flex flex-col flex-1 relative space-y-2">
                     <div className="text-xs text-red-500">Group {p.group}</div>
                     <div className="text-lg font-semibold">{p.title}</div>
                     <div className="text-sm text-gray-400">{p.description}</div>
-
-                    <div className="flex-1"></div>
-
-                    <div className="flex justify-between mt-4">
-                      <button
-                        onClick={() => startEdit(p)}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-semibold cursor-pointer"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteProject(p.id)}
-                        disabled={deletingId === p.id}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer disabled:bg-zinc-700"
-                      >
-                        {deletingId === p.id ? "Deleting..." : "Delete"}
-                      </button>
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-xl font-bold text-white">{p.vote_count ?? 0} votes</span>
+                      <div className="flex space-x-2">
+                        <button onClick={() => changeVote(p.id, 1)} disabled={updatingId === p.id} className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-semibold cursor-pointer">+1</button>
+                        <button onClick={() => changeVote(p.id, -1)} disabled={updatingId === p.id} className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer">-1</button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <button onClick={() => startEdit(p)} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-semibold cursor-pointer">Edit</button>
+                      <button onClick={() => deleteProject(p.id)} disabled={deletingId === p.id} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold cursor-pointer">{deletingId === p.id ? "Deleting..." : "Delete"}</button>
                     </div>
                   </div>
                 </div>

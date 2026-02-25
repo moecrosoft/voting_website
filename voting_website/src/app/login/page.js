@@ -1,116 +1,61 @@
 "use client";
 
-import { useActionState } from "react";
-import { useEffect } from "react";
-import { handleLogin } from "./actions";
+import { useState } from "react";
 
-export default function LoginPage() {
-  const [state, formAction] = useActionState(handleLogin, { error: "" });
+export default function LoginForm({ onSuccess }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  // ✅ Hard lock scroll on login page (mobile + desktop)
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-
-    return () => {
-      html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
-    };
-  }, []);
+  async function handleLogin(e) {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Login failed");
+      onSuccess();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   return (
-    <main
-      className="
-        fixed inset-0
-        bg-black
-        flex items-center justify-center
-        px-6
-        overflow-hidden
-        overscroll-none
-      "
-    >
-      {/* Login Card */}
-      <div
-        className="
-          w-full max-w-md
-          bg-zinc-900
-          border border-zinc-800
-          rounded-2xl
-          shadow-2xl
-          p-8
-        "
+    <main className="min-h-screen flex items-center justify-center bg-black text-white">
+      <form
+        onSubmit={handleLogin}
+        className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-8 space-y-6 shadow-lg w-96"
       >
-        {/* Title */}
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-red-500 mb-2">
-            Admin Login
-          </h1>
+        <h1 className="text-3xl font-bold text-red-500 text-center">Login</h1>
+        {error && <p className="text-red-500 text-center">{error}</p>}
+
+        <div>
+          <label className="text-sm text-gray-300">Username</label>
+          <input
+            type="text"
+            className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
         </div>
 
-        {/* Form */}
-        <form action={formAction} className="space-y-4">
+        <div>
+          <label className="text-sm text-gray-300">Password</label>
           <input
-            name="username"
-            placeholder="Username"
-            required
-            className="
-              w-full p-3 rounded-lg
-              bg-zinc-800 border border-zinc-700
-              text-white placeholder-gray-400
-              focus:outline-none focus:border-red-500
-              transition
-            "
-          />
-
-          <input
-            name="password"
             type="password"
-            placeholder="Password"
-            required
-            className="
-              w-full p-3 rounded-lg
-              bg-zinc-800 border border-zinc-700
-              text-white placeholder-gray-400
-              focus:outline-none focus:border-red-500
-              transition
-            "
+            className="w-full mt-1 px-3 py-2 rounded-xl bg-black border border-zinc-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
+        </div>
 
-          <button
-            type="submit"
-            className="
-              w-full py-3 rounded-lg
-              bg-red-600 hover:bg-red-700
-              active:scale-[0.98]
-              text-white font-semibold text-lg
-              transition shadow-lg cursor-pointer
-            "
-          >
-            Login
-          </button>
-        </form>
-
-        {/* Error */}
-        {state?.error && (
-          <div
-            className="
-              mt-4
-              bg-red-900/40 border border-red-500
-              text-red-400
-              px-4 py-2 rounded-lg
-              text-sm text-center
-            "
-          >
-            {state.error}
-          </div>
-        )}
-      </div>
+        <button className="w-full bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl font-semibold cursor-pointer transition">
+          Login
+        </button>
+      </form>
     </main>
   );
 }
