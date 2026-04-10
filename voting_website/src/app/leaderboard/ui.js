@@ -55,73 +55,101 @@ export default function LeaderboardUI() {
     return () => unsub();
   }, []);
 
-  // Sorting and grouping logic
   const sortedProjects = [...projects].sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0));
   const maxVotes = Math.max(...projects.map((p) => p.vote_count ?? 0), 1);
 
-  const voteGroups = [];
-  const zeroGroups = [];
+  const groups = [];
   sortedProjects.forEach((p) => {
     const votes = p.vote_count ?? 0;
-    if (votes === 0) zeroGroups.push(p);
-    else {
-      const last = voteGroups[voteGroups.length - 1];
-      if (last && last.votes === votes) last.items.push(p);
-      else voteGroups.push({ votes, items: [p] });
+    const last = groups[groups.length - 1];
+    if (last && last.votes === votes && votes > 0) {
+      last.items.push(p);
+      last.stableKey += `-${p.id}`; 
+    } else {
+      groups.push({ votes, items: [p], stableKey: `group-${p.id}`, isZero: votes === 0 });
     }
   });
 
-  const top3 = voteGroups.slice(0, 3);
-  const rest = voteGroups.slice(3);
+  const kahootTransition = {
+    type: "spring",
+    stiffness: 50,
+    damping: 10,
+    mass: 1.2,
+  };
 
-  const motionProps = { layout: true, transition: { type: "spring", stiffness: 300, damping: 35 } };
   const topColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
   const rankEmoji = ["🥇", "🥈", "🥉"];
+  const ROW_HEIGHT = 72; 
+
+  const heavyShadow = {
+    textShadow: "0px 0px 8px rgba(0,0,0,1), 0px 0px 12px rgba(0,0,0,1), 0px 2px 4px rgba(0,0,0,1)"
+  };
 
   return (
     <main className="min-h-[100dvh] bg-black text-white pb-12">
-      <div className="sticky top-0 z-10 bg-black border-b border-zinc-800">
+      <div className="sticky top-0 z-20 bg-black border-b border-zinc-800">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <h1 className="text-3xl md:text-4xl font-bold text-red-500 tracking-wide drop-shadow-[0_0_4px_red]">Leaderboard</h1>
           <p className="text-gray-400 mt-1 text-sm md:text-base">Live Results</p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-4 space-y-2">
+      <div className="max-w-6xl mx-auto px-6 mt-4 relative" style={{ height: groups.length * ROW_HEIGHT }}>
         <AnimatePresence>
-          {top3.map((g, i) => {
+          {groups.map((g, index) => {
             const width = (g.votes / maxVotes) * 100;
-            const groupNames = g.items.map((p) => `Group ${p.group}`).join(" / ");
+            const isTop3 = index < 3 && !g.isZero;
+            const groupNames = g.items.map((p) => p.title || `Group ${p.group}`).join(" / ");
+
             return (
-              <motion.div key={`top-${i}`} {...motionProps} className="relative h-14 md:h-16 grid grid-cols-[60px_1fr_auto] items-center rounded-xl overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: `${width}%` }} className="absolute left-0 top-0 bottom-0 rounded-xl" style={{ backgroundColor: topColors[i] }} />
-                <div className="relative z-10 text-xl md:text-2xl font-extrabold px-3 [text-shadow:0_0_8px_black,0_0_12px_black]">{rankEmoji[i]}</div>
-                <div className="relative z-10 px-2 py-1 text-lg md:text-xl font-extrabold tracking-wide text-white [text-shadow:0_0_8px_black,0_0_12px_black]">{groupNames}</div>
-                <div className="relative z-10 px-4 text-lg md:text-xl font-extrabold text-white [text-shadow:0_0_8px_black,0_0_12px_black]">{g.votes} votes</div>
+              <motion.div
+                key={g.stableKey}
+                layout
+                initial={{ opacity: 0, x: -20, y: index * ROW_HEIGHT }}
+                animate={{ opacity: 1, x: 0, y: index * ROW_HEIGHT }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={kahootTransition}
+                className="absolute left-0 right-0 h-14 md:h-16 grid grid-cols-[60px_1fr_auto] items-center rounded-xl overflow-hidden"
+                style={{ zIndex: groups.length - index }}
+              >
+                {/* Background Bar */}
+                {!g.isZero && (
+                  <motion.div
+                    layout
+                    transition={kahootTransition}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${width}%` }}
+                    className="absolute left-0 top-0 bottom-0 rounded-xl"
+                    style={{ backgroundColor: isTop3 ? topColors[index] : "#3f3f46" }}
+                  />
+                )}
+
+                {/* Rank Emoji / Number with Deep Shadow and Orange Color for ranks below 3 */}
+                <div 
+                  className={`relative z-10 text-xl md:text-2xl font-extrabold px-3 text-center ${!isTop3 && !g.isZero ? "text-[#FFA500]" : "text-white"}`}
+                  style={heavyShadow}
+                >
+                  {!g.isZero && (isTop3 ? rankEmoji[index] : `#${index + 1}`)}
+                </div>
+
+                {/* Project Text with Deep Shadow */}
+                <div 
+                  className="relative z-10 px-2 py-1 text-lg md:text-xl font-extrabold tracking-wide text-white truncate"
+                  style={heavyShadow}
+                >
+                  {groupNames}
+                </div>
+
+                {/* Vote Count with Deep Shadow */}
+                <div 
+                  className="relative z-10 px-4 text-lg md:text-xl font-extrabold text-white"
+                  style={heavyShadow}
+                >
+                  {g.votes} votes
+                </div>
               </motion.div>
             );
           })}
-
-          {rest.map((g, i) => {
-            const width = (g.votes / maxVotes) * 100;
-            const groupNames = g.items.map((p) => `Group ${p.group}`).join(" / ");
-            return (
-              <motion.div key={`rest-${i}`} {...motionProps} className="relative h-14 md:h-16 grid grid-cols-[60px_1fr_auto] items-center rounded-xl overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: `${width}%` }} className="absolute left-0 top-0 bottom-0 rounded-xl bg-gray-700" />
-                <div className="relative z-10 px-3 text-lg md:text-xl font-extrabold text-orange-400 drop-shadow-[0_0_4px_black]">#{i + 4}</div>
-                <div className="relative z-10 px-2 py-1 text-lg md:text-xl font-extrabold tracking-wide text-white drop-shadow-[0_0_4px_black] truncate">{groupNames}</div>
-                <div className="relative z-10 px-4 text-lg md:text-xl font-extrabold text-white drop-shadow-[0_0_4px_black]">{g.votes} votes</div>
-              </motion.div>
-            );
-          })}
-
-          {zeroGroups.map((p, i) => (
-            <div key={`zero-${i}`} className="h-12 md:h-14 grid grid-cols-[60px_1fr_auto] items-center">
-              <div />
-              <div className="px-2 text-lg md:text-xl font-extrabold tracking-wide text-white drop-shadow-[0_0_4px_black] truncate">Group {p.group}</div>
-              <div className="px-4 text-lg md:text-xl font-extrabold text-white drop-shadow-[0_0_4px_black]">0 votes</div>
-            </div>
-          ))}
         </AnimatePresence>
       </div>
     </main>
