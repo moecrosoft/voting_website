@@ -24,8 +24,6 @@ export default function VotingUI() {
 
   useEffect(() => {
     loadProjects();
-
-    // Realtime subscription
     const unsub = onProjectsUpdate(() => loadProjects());
     return () => unsub();
   }, []);
@@ -33,8 +31,10 @@ export default function VotingUI() {
   function toggle(id) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else {
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        // Prevent selecting more than 3
         if (next.size >= 3) return prev;
         next.add(id);
       }
@@ -44,7 +44,9 @@ export default function VotingUI() {
 
   async function submitVotes() {
     const ids = Array.from(selected);
-    if (ids.length < 1 || ids.length > 3) return;
+    // Strict check for exactly 3
+    if (ids.length !== 3) return;
+    
     setLoading(true);
     try {
       for (const id of ids) {
@@ -53,8 +55,7 @@ export default function VotingUI() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ vote_delta: 1 }),
         });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Vote failed");
+        if (!res.ok) throw new Error("Vote failed");
       }
 
       setShowConfirm(false);
@@ -74,14 +75,21 @@ export default function VotingUI() {
 
   return (
     <main className="min-h-[100dvh] bg-black text-white flex flex-col justify-between">
-      <div className="sticky top-0 z-10 bg-black border-b border-gray-800">
+      <div className="sticky top-0 z-10 bg-black border-b border-zinc-800">
         <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-red-500">
-            What are your three favourite projects?
-          </h1>
-          <div className="text-lg font-semibold">
-            Selected:
-            <span className="ml-2 text-red-500 font-extrabold">{selected.size} / 3</span>
+          <div className="space-y-1">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-red-500 uppercase italic tracking-tighter">
+              Pick your top 3
+            </h1>
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
+              Select exactly three projects to submit
+            </p>
+          </div>
+          <div className="text-lg font-bold bg-zinc-900 px-4 py-2 rounded-lg border border-zinc-800">
+            Selected: 
+            <span className={`ml-2 font-black transition-colors ${selected.size === 3 ? "text-green-500" : "text-red-500"}`}>
+              {selected.size} / 3
+            </span>
           </div>
         </div>
       </div>
@@ -89,27 +97,29 @@ export default function VotingUI() {
       <div className="max-w-6xl mx-auto px-6 py-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {projects.map((p) => {
           const isSelected = selected.has(p.id);
+          const isDisabled = !isSelected && selected.size >= 3;
+
           return (
             <div
               key={p.id}
               onClick={() => toggle(p.id)}
-              className={`relative cursor-pointer rounded-xl overflow-hidden transition-all duration-200 border-2 ${
-                isSelected ? "border-red-500" : "border-zinc-800"
-              } shadow-lg hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]`}
+              className={`relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 border-2 ${
+                isSelected ? "border-red-500 scale-[1.02] shadow-[0_0_20px_rgba(239,68,68,0.3)]" : "border-zinc-800"
+              } ${isDisabled ? "opacity-40 grayscale-[0.5]" : "hover:border-zinc-600"} shadow-lg active:scale-[0.98]`}
             >
               <div className="relative w-full aspect-video">
                 <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-                <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-black/95 to-transparent" />
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  readOnly
-                  className="absolute top-2 right-2 w-4 h-4 accent-red-600 opacity-80 z-10"
-                />
+                <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                
+                {/* Visual Indicator */}
+                <div className={`absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? "bg-red-600 border-red-600" : "bg-black/40 border-white/20"}`}>
+                  {isSelected && <span className="text-xs font-bold">✓</span>}
+                </div>
+
                 <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <div className="text-sm font-extrabold mb-1">Group {p.group}</div>
-                  <h3 className="text-2xl font-extrabold mb-1">{p.title}</h3>
-                  <p className="text-sm font-extrabold line-clamp-3">{p.description || "\u00A0"}</p>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-1">Group {p.group}</div>
+                  <h3 className="text-xl font-black uppercase italic leading-tight mb-1">{p.title}</h3>
+                  <p className="text-xs font-medium text-zinc-300 line-clamp-2">{p.description || "\u00A0"}</p>
                 </div>
               </div>
             </div>
@@ -117,30 +127,32 @@ export default function VotingUI() {
         })}
       </div>
 
-      <div className="bg-black border-t border-zinc-800 py-4">
-        <div className="max-w-6xl mx-auto flex justify-center">
+      <div className="bg-black border-t border-zinc-900 py-6 sticky bottom-0">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-2">
           <button
             onClick={() => setShowConfirm(true)}
-            disabled={loading || selected.size === 0}
-            className="w-1/2 sm:w-1/3 md:w-1/4 py-2 text-lg font-extrabold rounded-xl bg-red-600 text-white hover:bg-red-700 active:scale-[0.98] disabled:bg-zinc-700 disabled:text-gray-400 disabled:cursor-not-allowed transition cursor-pointer"
+            // Only enabled if exactly 3 are chosen
+            disabled={loading || selected.size !== 3}
+            className="w-full max-w-xs py-3 text-lg font-black uppercase italic cursor-pointer rounded-xl bg-red-600 text-white hover:bg-red-700 active:scale-[0.95] disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed transition-all shadow-xl"
           >
-            Submit Votes
+            {selected.size === 3 ? "Submit Votes" : `Pick ${3 - selected.size} more`}
           </button>
         </div>
       </div>
 
+      {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-[90%] max-w-md text-center space-y-4">
-            <h2 className="text-2xl font-extrabold">Confirm Votes</h2>
-            <p className="text-gray-400">
-              You selected {selected.size} project{selected.size > 1 ? "s" : ""}. Confirm voting?
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 w-full max-w-sm text-center space-y-4 shadow-2xl">
+            <h2 className="text-2xl font-black uppercase italic">Final Selection</h2>
+            <p className="text-zinc-400 text-sm">
+              Are you sure you want to vote for these 3 projects? You cannot change your vote later.
             </p>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 cursor-pointer">
-                Cancel
+              <button onClick={() => setShowConfirm(false)} className="flex-1 cursor-pointer py-3 font-bold rounded-lg bg-zinc-800 hover:bg-zinc-700 transition">
+                Back
               </button>
-              <button onClick={submitVotes} className="flex-1 py-3 rounded-lg bg-red-600 hover:bg-red-700 cursor-pointer">
+              <button onClick={submitVotes} className="flex-1 cursor-pointer py-3 font-bold rounded-lg bg-red-600 hover:bg-red-700 transition">
                 Confirm
               </button>
             </div>
@@ -148,11 +160,15 @@ export default function VotingUI() {
         </div>
       )}
 
+      {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-[90%] max-w-md text-center space-y-3">
-            <h2 className="text-2xl font-extrabold text-green-400">Vote Submitted 🎉</h2>
-            <p className="text-gray-400">Thank you for voting!</p>
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_40px_rgba(34,197,94,0.4)]">
+              <span className="text-4xl">✓</span>
+            </div>
+            <h2 className="text-3xl font-black uppercase italic text-green-400">Votes Locked!</h2>
+            <p className="text-zinc-400 font-bold uppercase tracking-widest text-sm">Thank you for participating</p>
           </div>
         </div>
       )}
