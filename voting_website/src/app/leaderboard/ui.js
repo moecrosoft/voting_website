@@ -67,89 +67,91 @@ export default function LeaderboardUI() {
   const spring = { type: "spring", stiffness: 60, damping: 20 };
 
   return (
-    <main className="relative h-[100dvh] w-full bg-[#020202] text-white overflow-hidden select-none">
+    <main className="h-[100dvh] w-full bg-[#020202] text-white flex flex-col px-4 md:px-12 overflow-hidden select-none">
       
-      {/* HEADER: Pinned Top */}
-      <header className="absolute top-0 left-0 w-full flex justify-between items-center px-4 md:px-12 pt-4 md:pt-10 z-50">
+      <header className="flex justify-between items-center pt-4 md:pt-10 flex-shrink-0">
         <div className="flex flex-col">
-          <h1 className="text-lg md:text-5xl font-black text-[#ff0000] uppercase tracking-tighter italic leading-none drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]">
+          <h1 className="text-xl md:text-5xl font-black text-[#ff0000] uppercase tracking-tighter italic leading-none drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]">
             Leaderboard
           </h1>
-          <p className="text-[6px] md:text-xs text-zinc-600 font-bold tracking-[0.4em] uppercase mt-1">Live Results</p>
+          <p className="text-[7px] md:text-xs text-zinc-600 font-bold tracking-[0.4em] uppercase mt-1">Live Results</p>
         </div>
-        <div className="bg-zinc-900/50 px-2 py-1 rounded-lg border border-red-900/30">
-          <p className="text-[5px] md:text-[9px] text-zinc-500 font-black uppercase text-center">Closing In</p>
+        <div className="bg-zinc-900/50 px-2 md:px-3 py-1 rounded-lg border border-red-900/30">
+          <p className="text-[6px] md:text-[9px] text-zinc-500 font-black uppercase text-center">Closing In</p>
           <p className="font-mono text-sm md:text-3xl font-bold text-red-500 tabular-nums leading-none">{timeLeft}</p>
         </div>
       </header>
 
-      {/* CENTER CONTENT: Perfectly Centered Container */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+      {/* CENTRAL WRAPPER: 
+          Using py-4 to force a minimum margin from header/footer.
+          justify-center on mobile to keep it tight in the middle.
+      */}
+      <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full py-6 md:py-0 gap-4 md:gap-12">
         
-        <div className="flex flex-col items-center w-full gap-4 md:gap-12 mt-4">
-          {/* Podium Area */}
-          <div className="w-full flex-shrink-0 scale-[0.85] md:scale-100 origin-center">
-            <AnimatePresence mode="popLayout">
-              {hasAnyPodium && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={spring}
-                  className="flex items-end justify-center gap-1 md:gap-8 w-full"
-                >
-                  {podiumGroups[1] ? (
-                    <PodiumStep data={podiumGroups[1]} rank={2} h="h-4 md:h-24" order="order-1" spring={spring} />
-                  ) : <div className="hidden md:block md:w-72 order-1" />}
+        {/* Podium: Shrunk heights for mobile to save vertical space */}
+        <div className="w-full flex-shrink-0">
+          <AnimatePresence mode="popLayout">
+            {hasAnyPodium && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={spring}
+                className="flex items-end justify-center gap-1 md:gap-8 w-full"
+              >
+                {podiumGroups[1] ? (
+                  <PodiumStep data={podiumGroups[1]} rank={2} h="h-6 md:h-24" order="order-1" spring={spring} />
+                ) : <div className="hidden md:block md:w-72 order-1" />}
 
-                  {podiumGroups[0] && (
-                    <PodiumStep data={podiumGroups[0]} rank={1} h="h-8 md:h-36" order="order-2" spring={spring} />
-                  )}
+                {podiumGroups[0] && (
+                  <PodiumStep data={podiumGroups[0]} rank={1} h="h-10 md:h-36" order="order-2" spring={spring} />
+                )}
 
-                  {podiumGroups[2] ? (
-                    <PodiumStep data={podiumGroups[2]} rank={3} h="h-2 md:h-12" order="order-3" spring={spring} />
-                  ) : <div className="hidden md:block md:w-72 order-3" />}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* List Area */}
-          <section className="w-full max-w-4xl mx-auto max-h-[22vh] md:max-h-none overflow-y-auto no-scrollbar px-1 flex-shrink-0">
-            <AnimatePresence mode="popLayout">
-              {listVotes.map((voteValue, idx) => (
-                <motion.div
-                  key={`row-${voteValue}`}
-                  layout
-                  className="flex items-center justify-between bg-zinc-900/20 border border-zinc-800/40 p-1 md:p-2.5 rounded-lg mb-1 last:mb-0"
-                >
-                  <div className="flex items-center gap-1.5 md:gap-8 overflow-hidden">
-                    <span className="text-zinc-700 font-black text-[8px] md:text-xl italic w-3 md:w-6 text-center">
-                      {voteValue > 0 ? `#${idx + podiumGroups.length + 1}` : "—"}
-                    </span>
-                    <div className="flex items-center overflow-hidden">
-                      {grouped[voteValue].map(p => (
-                        <div key={p.id} className="flex items-center gap-1.5 pr-2 border-r border-zinc-800/50 last:border-0 flex-shrink-0">
-                          <img src={p.image_url} alt="" className="w-6 md:w-20 aspect-video rounded-[1px] object-cover bg-black" />
-                          <span className="font-bold text-[6px] md:text-lg uppercase truncate max-w-[50px] md:max-w-xs">{p.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-0.5 ml-1">
-                    <span className={`text-[10px] md:text-3xl font-mono font-black ${voteValue > 0 ? 'text-[#ff0000]' : 'text-zinc-800'}`}>
-                      {voteValue}
-                    </span>
-                    <span className="text-[4px] md:text-[8px] text-zinc-600 font-black uppercase">Pts</span>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </section>
+                {podiumGroups[2] ? (
+                  <PodiumStep data={podiumGroups[2]} rank={3} h="h-4 md:h-12" order="order-3" spring={spring} />
+                ) : <div className="hidden md:block md:w-72 order-3" />}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* List: Capped at 20% height on mobile.
+            This is the "buffer" that prevents the footer from being touched.
+        */}
+        <section className="w-full max-w-4xl mx-auto max-h-[20vh] md:max-h-none overflow-y-auto no-scrollbar px-1 flex-shrink-0">
+          <AnimatePresence mode="popLayout">
+            {listVotes.map((voteValue, idx) => (
+              <motion.div
+                key={`row-${voteValue}`}
+                layout
+                className="flex items-center justify-between bg-zinc-900/20 border border-zinc-800/40 p-1.5 md:p-2.5 rounded-xl mb-1.5 last:mb-0"
+              >
+                <div className="flex items-center gap-2 md:gap-8 overflow-hidden">
+                  <span className="text-zinc-700 font-black text-[10px] md:text-xl italic w-4 md:w-6 text-center">
+                    {voteValue > 0 ? `#${idx + podiumGroups.length + 1}` : "—"}
+                  </span>
+                  <div className="flex items-center overflow-hidden">
+                    {grouped[voteValue].map(p => (
+                      <div key={p.id} className="flex items-center gap-2 pr-3 border-r border-zinc-800 last:border-0 flex-shrink-0">
+                        <img src={p.image_url} alt="" className="w-8 md:w-20 aspect-video rounded-sm object-cover bg-black" />
+                        <span className="font-bold text-[8px] md:text-lg uppercase truncate max-w-[60px] md:max-w-xs">{p.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-1 ml-2">
+                  <span className={`text-sm md:text-3xl font-mono font-black ${voteValue > 0 ? 'text-[#ff0000]' : 'text-zinc-800'}`}>
+                    {voteValue}
+                  </span>
+                  <span className="text-[5px] md:text-[8px] text-zinc-600 font-black uppercase">Pts</span>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </section>
       </div>
 
-      {/* FOOTER: Pinned Bottom */}
-      <footer className="absolute bottom-0 left-0 w-full flex justify-center items-center gap-6 md:gap-16 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-10 bg-gradient-to-t from-black to-transparent">
+      {/* Footer: Increased top margin (mt-auto) and significant bottom padding */}
+      <footer className="flex justify-center items-center gap-6 md:gap-16 flex-shrink-0 mt-auto py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] md:pb-10 border-t border-zinc-900/30">
         <img src="/itclub.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-40" />
         <div className="w-px h-3 md:h-6 bg-zinc-900" />
         <img src="/student.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-40" />
@@ -173,30 +175,39 @@ function PodiumStep({ data, rank, h, order, spring }) {
   const desktopOverlap = isTie ? (isGold ? 'md:-space-x-32' : 'md:-space-x-24') : 'md:-space-x-32';
 
   return (
-    <motion.div layout transition={spring} className={`flex flex-col items-center flex-1 md:flex-none ${desktopWidth} ${order} min-w-0`}>
-      <div className={`flex justify-center -space-x-6 md:${desktopOverlap} mb-0.5 md:mb-4 relative z-10 w-full`}>
+    <motion.div 
+      layout 
+      transition={spring} 
+      className={`flex flex-col items-center flex-1 md:flex-none ${desktopWidth} ${order} min-w-0`}
+    >
+      {/* Smaller images on mobile to save vertical space */}
+      <div className={`flex justify-center -space-x-8 md:${desktopOverlap} mb-1 md:mb-4 relative z-10 w-full`}>
         {data.items.slice(0, 3).map((p, i) => (
           <div key={p.id} 
-               className={`w-full md:w-56 aspect-video rounded-sm md:rounded-md border md:border-2 ${podiumStyles.imgBorder} overflow-hidden bg-black flex-shrink-0 relative`}
+               className={`w-full md:w-56 aspect-video rounded-md border md:border-2 ${podiumStyles.imgBorder} overflow-hidden bg-black flex-shrink-0 relative`}
                style={{ zIndex: 10 - i, transform: isGold ? 'scale(1.1)' : 'scale(1)' }}>
             <img src={p.image_url} alt="" className="w-full h-full object-cover" />
           </div>
         ))}
       </div>
-      <div className="text-center mb-0.5 md:mb-2 px-1 w-full min-h-[15px] md:min-h-[45px] flex flex-col justify-end">
+
+      <div className="text-center mb-0.5 md:mb-2 px-1 w-full min-h-[25px] md:min-h-[45px] flex flex-col justify-end">
         <div className="flex flex-col gap-0 max-w-[95%] mx-auto overflow-hidden">
           {data.items.slice(0, 3).map(p => (
-            <p key={p.id} className="font-black text-[5px] md:text-2xl uppercase truncate text-white italic leading-none">{p.title}</p>
+            <p key={p.id} className="font-black text-[6px] md:text-2xl uppercase truncate text-white italic leading-tight">
+              {p.title}
+            </p>
           ))}
         </div>
-        <p className={`font-mono font-black text-[6px] md:text-3xl mt-0.5 leading-none ${isGold ? 'text-yellow-400' : 'text-zinc-200'}`}>
-          {data.votes} <span className="text-[3px] md:text-sm text-zinc-600 uppercase">Pts</span>
+        <p className={`font-mono font-black text-[7px] md:text-3xl mt-0.5 leading-none ${isGold ? 'text-yellow-400' : 'text-zinc-200'}`}>
+          {data.votes} <span className="text-[4px] md:text-sm text-zinc-600 uppercase">Pts</span>
         </p>
       </div>
-      <div className={`${h} w-full rounded-t-md md:rounded-t-[2.5rem] border-t md:border-t-4 ${podiumStyles.border} ${podiumStyles.glow} bg-gradient-to-t ${podiumStyles.block} flex flex-col items-center justify-center relative overflow-hidden`}>
+
+      <div className={`${h} w-full rounded-t-lg md:rounded-t-[2.5rem] border-t md:border-t-4 ${podiumStyles.border} ${podiumStyles.glow} bg-gradient-to-t ${podiumStyles.block} flex flex-col items-center justify-center relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-black/10 to-black/40" />
-        <span className="text-[8px] md:text-6xl mb-0 md:mb-1 relative">{podiumStyles.emoji}</span>
-        <span className={`font-black text-[3px] md:text-2xl italic ${podiumStyles.text} relative brightness-125`}>#{rank}</span>
+        <span className="text-[10px] md:text-6xl mb-0.5 md:mb-1 relative">{podiumStyles.emoji}</span>
+        <span className={`font-black text-[4px] md:text-2xl italic ${podiumStyles.text} relative brightness-125`}>#{rank}</span>
       </div>
     </motion.div>
   );
