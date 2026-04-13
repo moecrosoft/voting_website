@@ -82,12 +82,12 @@ export default function LeaderboardUI() {
         </div>
       </header>
 
-      {/* MOBILE SPACER TOP */}
+      {/* Spacer to keep center alignment on mobile */}
       <div className="flex-grow md:hidden" />
 
       <div className="flex-shrink-0 flex flex-col items-center w-full">
-        {/* Podium Container */}
-        <div className="w-full mb-6 md:mb-12">
+        {/* Podium Area */}
+        <div className="w-full mb-4 md:mb-12">
           <AnimatePresence mode="popLayout">
             {hasAnyPodium && (
               <motion.div 
@@ -97,11 +97,11 @@ export default function LeaderboardUI() {
                 className="flex items-end justify-center gap-1 md:gap-8 w-full"
               >
                 {podiumGroups[1] ? (
-                  <PodiumStep data={podiumGroups[1]} rank={2} h="h-10 md:h-24" order="order-1" spring={spring} />
+                  <PodiumStep data={podiumGroups[1]} rank={2} h="h-8 md:h-24" order="order-1" spring={spring} />
                 ) : <div className="hidden md:block md:w-72 order-1" />}
 
                 {podiumGroups[0] && (
-                  <PodiumStep data={podiumGroups[0]} rank={1} h="h-16 md:h-36" order="order-2" spring={spring} />
+                  <PodiumStep data={podiumGroups[0]} rank={1} h="h-14 md:h-36" order="order-2" spring={spring} />
                 )}
 
                 {podiumGroups[2] ? (
@@ -112,8 +112,8 @@ export default function LeaderboardUI() {
           </AnimatePresence>
         </div>
 
-        {/* List Section */}
-        <section className="w-full max-w-4xl mx-auto max-h-[35vh] md:max-h-none overflow-y-auto no-scrollbar">
+        {/* Scrollable List Area */}
+        <section className="w-full max-w-4xl mx-auto max-h-[30vh] md:max-h-none overflow-y-auto no-scrollbar px-1">
           <AnimatePresence mode="popLayout">
             {listVotes.map((voteValue, idx) => (
               <motion.div
@@ -146,10 +146,10 @@ export default function LeaderboardUI() {
         </section>
       </div>
 
-      {/* MOBILE SPACER BOTTOM */}
       <div className="flex-grow md:hidden" />
 
-      <footer className="flex justify-center items-center gap-6 md:gap-16 flex-shrink-0 py-2 mt-auto">
+      {/* Footer with extra bottom padding for mobile browsers */}
+      <footer className="flex justify-center items-center gap-6 md:gap-16 flex-shrink-0 py-2 pb-8 md:pb-2 mt-auto border-t border-zinc-900/30">
         <img src="/itclub.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-60" />
         <div className="w-px h-3 md:h-6 bg-zinc-900" />
         <img src="/student.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-60" />
@@ -169,7 +169,7 @@ function PodiumStep({ data, rank, h, order, spring }) {
     3: { block: "from-[#b45309] via-[#7c2d12] to-[#1c1917]", border: "border-[#b45309]", glow: "shadow-[0_-8px_20px_rgba(180,83,9,0.25)]", emoji: "🥉", text: "text-[#b45309]", imgBorder: "border-[#b45309] shadow-[0_0_12px_rgba(180,83,9,0.4)]" }
   }[rank];
 
-  // LAPTOP DIMENSIONS REMAIN FIXED
+  // LAPTOP DIMENSIONS (DO NOT TOUCH)
   const desktopWidth = isTie ? (numTied > 2 ? 'md:w-[450px]' : 'md:w-96') : 'md:w-72';
   const desktopOverlap = isTie ? (isGold ? 'md:-space-x-32' : 'md:-space-x-24') : 'md:-space-x-32';
 
@@ -179,10 +179,11 @@ function PodiumStep({ data, rank, h, order, spring }) {
       transition={spring} 
       className={`flex flex-col items-center flex-1 md:flex-none ${desktopWidth} ${order} min-w-0`}
     >
-      <div className={`flex justify-center -space-x-8 md:${desktopOverlap} mb-1 md:mb-4 relative z-10 w-full`}>
+      {/* Image Stack */}
+      <div className={`flex justify-center -space-x-8 md:${desktopOverlap} mb-1 md:mb-4 relative z-10 w-full px-0.5`}>
         {data.items.slice(0, 3).map((p, i) => (
           <div key={p.id} 
-               className={`w-full md:w-56 aspect-video rounded-md border-2 ${podiumStyles.imgBorder} overflow-hidden bg-black flex-shrink-0 relative`}
+               className={`w-full md:w-56 aspect-video rounded-md border-[1.5px] md:border-2 ${podiumStyles.imgBorder} overflow-hidden bg-black flex-shrink-0 relative`}
                style={{ 
                  zIndex: 10 - i, 
                  rotate: isTie ? (i % 2 === 0 ? '-1.5deg' : '1.5deg') : '0deg', 
@@ -193,24 +194,25 @@ function PodiumStep({ data, rank, h, order, spring }) {
         ))}
       </div>
 
-      <div className="text-center mb-1 md:mb-2 px-1 w-full min-h-[35px] md:min-h-[45px] flex flex-col justify-end">
-        <div className="flex flex-col gap-0.5 md:gap-1 max-w-[95%] mx-auto overflow-hidden">
+      {/* Project Names */}
+      <div className="text-center mb-0.5 md:mb-2 px-1 w-full min-h-[30px] md:min-h-[45px] flex flex-col justify-end">
+        <div className="flex flex-col gap-0 max-w-[95%] mx-auto overflow-hidden">
           {data.items.slice(0, 3).map(p => (
-            <p key={p.id} className="font-black text-[7px] md:text-2xl uppercase truncate text-white leading-tight italic drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+            <p key={p.id} className="font-black text-[7px] md:text-2xl uppercase truncate text-white italic drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
               {p.title}
             </p>
           ))}
-          {numTied > 3 && <p className="text-[5px] md:text-xs text-zinc-400 font-bold">+ {numTied - 3}</p>}
         </div>
-        <p className={`font-mono font-black text-[9px] md:text-3xl mt-0.5 md:mt-1 leading-none ${isGold ? 'text-yellow-400' : 'text-zinc-200'}`}>
-          {data.votes} <span className="text-[5px] md:text-sm text-zinc-600">PTS</span>
+        <p className={`font-mono font-black text-[8px] md:text-3xl mt-0.5 leading-none ${isGold ? 'text-yellow-400' : 'text-zinc-200'}`}>
+          {data.votes} <span className="text-[4px] md:text-sm text-zinc-600">PTS</span>
         </p>
       </div>
 
-      <div className={`${h} w-full rounded-t-xl md:rounded-t-[2.5rem] border-t-2 md:border-t-4 ${podiumStyles.border} ${podiumStyles.glow} bg-gradient-to-t ${podiumStyles.block} flex flex-col items-center justify-center relative overflow-hidden`}>
+      {/* Podium Block */}
+      <div className={`${h} w-full rounded-t-lg md:rounded-t-[2.5rem] border-t md:border-t-4 ${podiumStyles.border} ${podiumStyles.glow} bg-gradient-to-t ${podiumStyles.block} flex flex-col items-center justify-center relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-black/10 to-black/40" />
-        <span className="text-sm md:text-6xl mb-0.5 md:mb-1 drop-shadow-xl relative">{podiumStyles.emoji}</span>
-        <span className={`font-black text-[6px] md:text-2xl italic ${podiumStyles.text} relative brightness-125`}>#{rank}</span>
+        <span className="text-xs md:text-6xl mb-0.5 md:mb-1 drop-shadow-xl relative">{podiumStyles.emoji}</span>
+        <span className={`font-black text-[5px] md:text-2xl italic ${podiumStyles.text} relative brightness-125`}>#{rank}</span>
       </div>
     </motion.div>
   );
