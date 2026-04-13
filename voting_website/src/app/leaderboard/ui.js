@@ -208,7 +208,7 @@ function PodiumStep({ data, rank, h, order, spring }) {
         </p>
       </div>
 
-      {/* Podium Block */}
+      
       <div className={`${h} w-full rounded-t-lg md:rounded-t-[2.5rem] border-t md:border-t-4 ${podiumStyles.border} ${podiumStyles.glow} bg-gradient-to-t ${podiumStyles.block} flex flex-col items-center justify-center relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-black/10 to-black/40" />
         <span className="text-xs md:text-6xl mb-0.5 md:mb-1 drop-shadow-xl relative">{podiumStyles.emoji}</span>
