@@ -82,11 +82,13 @@ export default function LeaderboardUI() {
         </div>
       </header>
 
-      {/* THE LIVE CONTENT WRAPPER */}
-      {/* justify-evenly on mobile ensures space is distributed around the group */}
-      <div className="flex-1 flex flex-col items-center justify-evenly md:justify-center min-h-0 w-full py-4 md:py-0">
+      {/* CENTRAL WRAPPER: 
+          Using py-4 to force a minimum margin from header/footer.
+          justify-center on mobile to keep it tight in the middle.
+      */}
+      <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full py-6 md:py-0 gap-4 md:gap-12">
         
-        {/* Podium Group */}
+        {/* Podium: Shrunk heights for mobile to save vertical space */}
         <div className="w-full flex-shrink-0">
           <AnimatePresence mode="popLayout">
             {hasAnyPodium && (
@@ -97,23 +99,25 @@ export default function LeaderboardUI() {
                 className="flex items-end justify-center gap-1 md:gap-8 w-full"
               >
                 {podiumGroups[1] ? (
-                  <PodiumStep data={podiumGroups[1]} rank={2} h="h-8 md:h-24" order="order-1" spring={spring} />
+                  <PodiumStep data={podiumGroups[1]} rank={2} h="h-6 md:h-24" order="order-1" spring={spring} />
                 ) : <div className="hidden md:block md:w-72 order-1" />}
 
                 {podiumGroups[0] && (
-                  <PodiumStep data={podiumGroups[0]} rank={1} h="h-12 md:h-36" order="order-2" spring={spring} />
+                  <PodiumStep data={podiumGroups[0]} rank={1} h="h-10 md:h-36" order="order-2" spring={spring} />
                 )}
 
                 {podiumGroups[2] ? (
-                  <PodiumStep data={podiumGroups[2]} rank={3} h="h-6 md:h-12" order="order-3" spring={spring} />
+                  <PodiumStep data={podiumGroups[2]} rank={3} h="h-4 md:h-12" order="order-3" spring={spring} />
                 ) : <div className="hidden md:block md:w-72 order-3" />}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* List Group - Added mt-4 to ensure it never touches the podium */}
-        <section className="w-full max-w-4xl mx-auto max-h-[25vh] md:max-h-none overflow-y-auto no-scrollbar px-1 flex-shrink-0 mt-4 md:mt-12">
+        {/* List: Capped at 20% height on mobile.
+            This is the "buffer" that prevents the footer from being touched.
+        */}
+        <section className="w-full max-w-4xl mx-auto max-h-[20vh] md:max-h-none overflow-y-auto no-scrollbar px-1 flex-shrink-0">
           <AnimatePresence mode="popLayout">
             {listVotes.map((voteValue, idx) => (
               <motion.div
@@ -146,11 +150,11 @@ export default function LeaderboardUI() {
         </section>
       </div>
 
-      {/* Footer stays at the very bottom, but py-6 ensures distance from the list above */}
-      <footer className="flex justify-center items-center gap-6 md:gap-16 flex-shrink-0 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-8 border-t border-zinc-900/30">
-        <img src="/itclub.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-50" />
+      {/* Footer: Increased top margin (mt-auto) and significant bottom padding */}
+      <footer className="flex justify-center items-center gap-6 md:gap-16 flex-shrink-0 mt-auto py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] md:pb-10 border-t border-zinc-900/30">
+        <img src="/itclub.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-40" />
         <div className="w-px h-3 md:h-6 bg-zinc-900" />
-        <img src="/student.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-50" />
+        <img src="/student.png" alt="" className="h-3 md:h-8 w-auto object-contain opacity-40" />
       </footer>
     </main>
   );
@@ -176,6 +180,7 @@ function PodiumStep({ data, rank, h, order, spring }) {
       transition={spring} 
       className={`flex flex-col items-center flex-1 md:flex-none ${desktopWidth} ${order} min-w-0`}
     >
+      {/* Smaller images on mobile to save vertical space */}
       <div className={`flex justify-center -space-x-8 md:${desktopOverlap} mb-1 md:mb-4 relative z-10 w-full`}>
         {data.items.slice(0, 3).map((p, i) => (
           <div key={p.id} 
@@ -189,20 +194,20 @@ function PodiumStep({ data, rank, h, order, spring }) {
       <div className="text-center mb-0.5 md:mb-2 px-1 w-full min-h-[25px] md:min-h-[45px] flex flex-col justify-end">
         <div className="flex flex-col gap-0 max-w-[95%] mx-auto overflow-hidden">
           {data.items.slice(0, 3).map(p => (
-            <p key={p.id} className="font-black text-[7px] md:text-2xl uppercase truncate text-white italic leading-tight">
+            <p key={p.id} className="font-black text-[6px] md:text-2xl uppercase truncate text-white italic leading-tight">
               {p.title}
             </p>
           ))}
         </div>
-        <p className={`font-mono font-black text-[8px] md:text-3xl mt-0.5 leading-none ${isGold ? 'text-yellow-400' : 'text-zinc-200'}`}>
+        <p className={`font-mono font-black text-[7px] md:text-3xl mt-0.5 leading-none ${isGold ? 'text-yellow-400' : 'text-zinc-200'}`}>
           {data.votes} <span className="text-[4px] md:text-sm text-zinc-600 uppercase">Pts</span>
         </p>
       </div>
 
       <div className={`${h} w-full rounded-t-lg md:rounded-t-[2.5rem] border-t md:border-t-4 ${podiumStyles.border} ${podiumStyles.glow} bg-gradient-to-t ${podiumStyles.block} flex flex-col items-center justify-center relative overflow-hidden`}>
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-black/10 to-black/40" />
-        <span className="text-xs md:text-6xl mb-0.5 md:mb-1 relative">{podiumStyles.emoji}</span>
-        <span className={`font-black text-[5px] md:text-2xl italic ${podiumStyles.text} relative brightness-125`}>#{rank}</span>
+        <span className="text-[10px] md:text-6xl mb-0.5 md:mb-1 relative">{podiumStyles.emoji}</span>
+        <span className={`font-black text-[4px] md:text-2xl italic ${podiumStyles.text} relative brightness-125`}>#{rank}</span>
       </div>
     </motion.div>
   );
