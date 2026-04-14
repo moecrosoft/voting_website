@@ -81,15 +81,15 @@ export default function LeaderboardUI() {
     items: grouped[v],
   }));
 
-  const podiumGroups = voteGroups.filter(g => g.votes > 0).slice(0, 3);
+  const podiumGroups = voteGroups.filter((g) => g.votes > 0).slice(0, 3);
 
   const spring = { type: "spring", stiffness: 60, damping: 20 };
 
   return (
-    <main className="h-[100dvh] w-full bg-[#020202] text-white flex flex-col justify-between px-4 md:px-10 overflow-hidden">
+    <main className="h-[100dvh] w-full bg-[#020202] text-white flex flex-col px-4 md:px-10 overflow-hidden">
 
       {/* HEADER */}
-      <header className="flex justify-between items-center pt-6 md:pt-10">
+      <header className="flex justify-between items-center pt-4 md:pt-8 pb-2 shrink-0">
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-[#ff0000] uppercase tracking-tighter italic leading-none drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]">
             Leaderboard
@@ -110,7 +110,7 @@ export default function LeaderboardUI() {
       </header>
 
       {/* PODIUM */}
-      <div className="w-full">
+      <div className="w-full shrink-0">
         <AnimatePresence mode="popLayout">
           {podiumGroups.length > 0 && !allZero && (
             <motion.div
@@ -134,14 +134,13 @@ export default function LeaderboardUI() {
         </AnimatePresence>
       </div>
 
-      {/* LIST */}
-      <section className="w-full max-w-4xl mx-auto overflow-y-auto">
-
+      {/* LIST — flex-1 + min-h-0 makes this scrollable within the remaining space */}
+      <section className="w-full max-w-4xl mx-auto flex-1 min-h-0 overflow-y-auto py-2">
         <AnimatePresence mode="popLayout">
 
           {/* CASE 1: ALL ZERO → ONE ROW PER PROJECT */}
           {allZero
-            ? projects.map((p, idx) => (
+            ? projects.map((p) => (
                 <motion.div
                   key={p.id}
                   layout
@@ -156,6 +155,7 @@ export default function LeaderboardUI() {
                       <img
                         src={p.image_url}
                         className="w-10 md:w-16 aspect-video rounded object-cover"
+                        alt={p.title}
                       />
                       <span className="font-bold text-xs md:text-base uppercase truncate">
                         {p.title}
@@ -177,7 +177,6 @@ export default function LeaderboardUI() {
                   className="flex items-center justify-between bg-zinc-900/30 border border-zinc-800/50 p-3 rounded-xl mb-2"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
-
                     <span className="text-zinc-500 font-black text-sm md:text-xl italic w-6 text-center">
                       #{idx + 1}
                     </span>
@@ -191,6 +190,7 @@ export default function LeaderboardUI() {
                           <img
                             src={p.image_url}
                             className="w-10 md:w-16 aspect-video rounded object-cover"
+                            alt={p.title}
                           />
                           <span className="font-bold text-xs md:text-base uppercase truncate max-w-[120px]">
                             {p.title}
@@ -198,7 +198,6 @@ export default function LeaderboardUI() {
                         </div>
                       ))}
                     </div>
-
                   </div>
 
                   <div className="font-mono font-black text-lg md:text-2xl text-[#ff0000]">
@@ -210,17 +209,17 @@ export default function LeaderboardUI() {
       </section>
 
       {/* FOOTER */}
-      <footer className="flex justify-center items-center gap-6 md:gap-16 pb-6">
-        <img src="/itclub.png" className="h-5 md:h-7 opacity-40" />
+      <footer className="flex justify-center items-center gap-6 md:gap-16 py-4 shrink-0">
+        <img src="/itclub.png" className="h-5 md:h-7 opacity-40" alt="IT Club" />
         <div className="w-px h-5 bg-zinc-800" />
-        <img src="/student.png" className="h-5 md:h-7 opacity-40" />
+        <img src="/student.png" className="h-5 md:h-7 opacity-40" alt="Student" />
       </footer>
 
     </main>
   );
 }
 
-/* PODIUM (UNCHANGED) */
+/* PODIUM */
 function PodiumStep({ data, rank, mobileH, desktopH }) {
   const styles = {
     1: {
@@ -256,6 +255,7 @@ function PodiumStep({ data, rank, mobileH, desktopH }) {
           <img
             key={p.id}
             src={p.image_url}
+            alt={p.title}
             className={`w-16 md:w-24 aspect-video rounded border-2 ${styles.border} ${styles.glow}`}
           />
         ))}

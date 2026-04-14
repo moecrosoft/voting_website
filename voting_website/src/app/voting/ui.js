@@ -34,7 +34,6 @@ export default function VotingUI() {
       if (next.has(id)) {
         next.delete(id);
       } else {
-        // Prevent selecting more than 3
         if (next.size >= 3) return prev;
         next.add(id);
       }
@@ -44,9 +43,8 @@ export default function VotingUI() {
 
   async function submitVotes() {
     const ids = Array.from(selected);
-    // Strict check for exactly 3
     if (ids.length !== 3) return;
-    
+
     setLoading(true);
     try {
       for (const id of ids) {
@@ -86,7 +84,7 @@ export default function VotingUI() {
             </p>
           </div>
           <div className="text-lg font-bold bg-zinc-900 px-4 py-2 rounded-lg border border-zinc-800">
-            Selected: 
+            Selected:
             <span className={`ml-2 font-black transition-colors ${selected.size === 3 ? "text-green-500" : "text-red-500"}`}>
               {selected.size} / 3
             </span>
@@ -110,8 +108,7 @@ export default function VotingUI() {
               <div className="relative w-full aspect-video">
                 <img src={p.image_url} alt="" className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                
-                {/* Visual Indicator */}
+
                 <div className={`absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? "bg-red-600 border-red-600" : "bg-black/40 border-white/20"}`}>
                   {isSelected && <span className="text-xs font-bold">✓</span>}
                 </div>
@@ -131,7 +128,6 @@ export default function VotingUI() {
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-2">
           <button
             onClick={() => setShowConfirm(true)}
-            // Only enabled if exactly 3 are chosen
             disabled={loading || selected.size !== 3}
             className="w-full max-w-xs py-3 text-lg font-black uppercase italic cursor-pointer rounded-xl bg-red-600 text-white hover:bg-red-700 active:scale-[0.95] disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed transition-all shadow-xl"
           >
@@ -149,11 +145,19 @@ export default function VotingUI() {
               Are you sure you want to vote for these 3 projects? You cannot change your vote later.
             </p>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowConfirm(false)} className="flex-1 cursor-pointer py-3 font-bold rounded-lg bg-zinc-800 hover:bg-zinc-700 transition">
+              <button
+                onClick={() => setShowConfirm(false)}
+                disabled={loading}
+                className="flex-1 cursor-pointer py-3 font-bold rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
                 Back
               </button>
-              <button onClick={submitVotes} className="flex-1 cursor-pointer py-3 font-bold rounded-lg bg-red-600 hover:bg-red-700 transition">
-                Confirm
+              <button
+                onClick={submitVotes}
+                disabled={loading}
+                className="flex-1 cursor-pointer py-3 font-bold rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {loading ? "Submitting..." : "Confirm"}
               </button>
             </div>
           </div>

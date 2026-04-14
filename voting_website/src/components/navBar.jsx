@@ -27,11 +27,11 @@ export default function NavBar() {
         <div className="flex items-center justify-between">
           <Link href="/admin" className="flex items-center hover:opacity-90 transition">
             <Image
-              src="/itc.jpg"
+              src="/itc_black.png"
               alt="Voting"
               width={180}
               height={60}
-              className="h-10 sm:h-12 md:h-14 w-auto object-contain rounded-lg"
+              className="h-10 sm:h-12 md:h-14 w-auto object-contain"
             />
           </Link>
 
