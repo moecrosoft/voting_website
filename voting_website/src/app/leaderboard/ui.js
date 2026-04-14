@@ -134,8 +134,8 @@ export default function LeaderboardUI() {
         </AnimatePresence>
       </div>
 
-      {/* LIST — flex-1 + min-h-0 makes this scrollable within the remaining space */}
-      <section className="w-full max-w-4xl mx-auto flex-1 min-h-0 overflow-y-auto py-2">
+      {/* LIST */}
+      <section className="w-full max-w-4xl mx-auto flex-1 min-h-0 overflow-y-auto py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <AnimatePresence mode="popLayout">
 
           {/* CASE 1: ALL ZERO → ONE ROW PER PROJECT */}
