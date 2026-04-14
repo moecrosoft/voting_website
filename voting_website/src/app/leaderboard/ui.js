@@ -6,7 +6,7 @@ import confetti from "canvas-confetti";
 
 export default function LeaderboardUI() {
   const [projects, setProjects] = useState([]);
-  const [targetDate] = useState(new Date("2026-04-14T17:00:00"));
+  const [targetDate] = useState(new Date("2026-04-15T17:00:00"));
   const [timeLeft, setTimeLeft] = useState("");
 
   const firstLoadRef = useRef(true);
